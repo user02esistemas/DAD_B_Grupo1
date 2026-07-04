@@ -17,3 +17,16 @@ GET  /api/productos/{id}
 POST /api/ventas
 GET  /api/dashboard/resumen
 ```
+
+Estructura interna:
+
+```text
+pe.edu.botica.api.auth
+pe.edu.botica.api.productos
+pe.edu.botica.api.ventas
+pe.edu.botica.api.compras
+pe.edu.botica.api.reportes
+pe.edu.botica.api.common
+pe.edu.botica.api.config
+pe.edu.botica.api.filter
+```

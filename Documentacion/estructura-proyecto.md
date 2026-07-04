@@ -29,3 +29,71 @@ Documentacion          Markdown tecnico del sistema.
 Library                JARs necesarios para BoticaWebCliente.
 Postman                Colecciones de pruebas API.
 ```
+
+## BoticaAPIREST
+
+```text
+src/main/java/pe/edu/botica/api/
+├── auth/
+├── productos/
+├── ventas/
+├── compras/
+├── reportes/
+├── common/
+├── config/
+└── filter/
+```
+
+## BoticaRMIInterface
+
+```text
+src/main/java/pe/edu/botica/rmi/
+├── auth/
+├── productos/
+├── ventas/
+├── compras/
+├── reportes/
+├── dto/
+└── exception/
+```
+
+## BoticaRMIServidor
+
+```text
+src/main/java/pe/edu/botica/rmi/
+├── server/
+├── services/
+│   ├── auth/
+│   ├── productos/
+│   ├── ventas/
+│   ├── compras/
+│   └── reportes/
+├── dao/
+├── config/
+└── util/
+```
+
+## BoticaMobileFlutter
+
+```text
+lib/
+├── main.dart
+├── core/
+│   ├── config/
+│   ├── network/
+│   ├── storage/
+│   └── widgets/
+└── features/
+    ├── auth/
+    ├── dashboard/
+    ├── productos/
+    └── ventas/
+```
+
+## Postman
+
+```text
+Postman/
+├── collections/
+└── environments/
+```
