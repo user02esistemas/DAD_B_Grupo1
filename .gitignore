@@ -1,0 +1,27 @@
+# Java / NetBeans / Ant
+**/build/
+**/dist/
+**/nbproject/private/
+*.class
+*.war
+*.ear
+*.log
+*.tmp
+*~
+**/target/
+
+# Permitir librerias compartidas del proyecto
+!Library/*.jar
+!BoticaWebCliente/web/WEB-INF/lib/*.jar
+
+# Flutter
+BoticaMobileFlutter/build/
+BoticaMobileFlutter/.dart_tool/
+BoticaMobileFlutter/.idea/
+BoticaMobileFlutter/.metadata
+BoticaMobileFlutter/.packages
+BoticaMobileFlutter/pubspec.lock
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
