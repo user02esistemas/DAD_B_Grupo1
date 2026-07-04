@@ -43,3 +43,9 @@ La API no debe acceder directamente a la base de datos.
 ## Prueba En Postman
 
 Antes de conectar Flutter, cada endpoint debe probarse en Postman y guardarse en `Postman/`.
+
+Primer endpoint implementado:
+
+```text
+GET {{base_url}}/api/productos?termino=para&limite=10
+```
