@@ -5,8 +5,15 @@ Componente que contiene los contratos remotos Java RMI compartidos por el servid
 Ejemplos de interfaces futuras:
 
 ```text
-ProductoServiceRMI
-VentaServiceRMI
-UsuarioServiceRMI
-ReporteServiceRMI
+auth/AuthServiceRMI
+productos/ProductoServiceRMI
+productos/InventarioServiceRMI
+ventas/VentaServiceRMI
+ventas/CajaServiceRMI
+compras/CompraServiceRMI
+compras/ProveedorServiceRMI
+reportes/DashboardServiceRMI
+reportes/ReporteServiceRMI
+dto/*
+exception/*
 ```
