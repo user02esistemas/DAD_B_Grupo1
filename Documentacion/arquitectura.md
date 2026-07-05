@@ -24,6 +24,18 @@ Modulos moviles iniciales:
 | Dashboard | `/api/dashboard/resumen` | `DashboardService` |
 | Productos | `/api/productos` | `ProductoService` |
 
+Modulos moviles pendientes y su integracion esperada:
+
+| Modulo Flutter | Endpoint REST esperado | Servicio RMI |
+|---|---|---|
+| Ventas | `/api/ventas`, `/api/ventas/ultimas` | `VentaService` |
+| Compras | `/api/compras`, `/api/compras/proveedores` | `CompraService` |
+| Caja | Pendiente de endpoint API | `VentaService` / sesiones de caja |
+| Usuarios | `/api/usuarios` | `UsuarioService` |
+| Reportes | `/api/reportes/ventas`, `/api/reportes/productos-mas-vendidos` | `ReporteService` |
+
+Los roles de `usuarios.roles` deben controlar las opciones visibles en Flutter y las validaciones reales en API/RMI.
+
 ## Componentes
 
 ```text

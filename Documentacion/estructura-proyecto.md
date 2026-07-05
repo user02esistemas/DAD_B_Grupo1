@@ -93,8 +93,13 @@ lib/
 │   └── widgets/
 └── features/
     ├── auth/
+    ├── caja/
+    ├── compras/
     ├── dashboard/
+    ├── health/
     ├── productos/
+    ├── reportes/
+    ├── usuarios/
     └── ventas/
 ```
 
