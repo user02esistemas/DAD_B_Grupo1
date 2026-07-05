@@ -5,6 +5,55 @@
   },
   "item": [
     {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "logout"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Productos",
       "item": [
         {
@@ -14,23 +63,218 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/productos?termino=para&limite=10",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "productos"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["api", "productos"],
               "query": [
-                {
-                  "key": "termino",
-                  "value": "para"
-                },
-                {
-                  "key": "limite",
-                  "value": "10"
-                }
+                { "key": "termino", "value": "para" },
+                { "key": "limite", "value": "10" }
               ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar productos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/productos?limite=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "productos"],
+              "query": [{ "key": "limite", "value": "20" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Detalle producto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/productos/14",
+              "host": ["{{base_url}}"],
+              "path": ["api", "productos", "14"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Ventas",
+      "item": [
+        {
+          "name": "Registrar venta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": 1,\n  \"clienteNombre\": \"Cliente prueba\",\n  \"detalles\": [\n    {\n      \"productoId\": 14,\n      \"cantidad\": 1,\n      \"precioUnitario\": 4.00\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ventas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ventas"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ultimas ventas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/ventas/ultimas?limite=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ventas", "ultimas"],
+              "query": [{ "key": "limite", "value": "10" }]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Compras",
+      "item": [
+        {
+          "name": "Registrar compra",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": 1,\n  \"proveedorId\": 1,\n  \"detalles\": [\n    {\n      \"productoId\": 14,\n      \"cantidad\": 5,\n      \"precioUnitario\": 2.50\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/compras",
+              "host": ["{{base_url}}"],
+              "path": ["api", "compras"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Proveedores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/compras/proveedores",
+              "host": ["{{base_url}}"],
+              "path": ["api", "compras", "proveedores"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Resumen",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/resumen",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dashboard", "resumen"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Productos con alerta",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/productos-alerta",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dashboard", "productos-alerta"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reportes",
+      "item": [
+        {
+          "name": "Ventas por rango",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/reportes/ventas?desde=2026-01-01&hasta=2026-12-31",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reportes", "ventas"],
+              "query": [
+                { "key": "desde", "value": "2026-01-01" },
+                { "key": "hasta", "value": "2026-12-31" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Productos mas vendidos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/reportes/productos-mas-vendidos?limite=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reportes", "productos-mas-vendidos"],
+              "query": [{ "key": "limite", "value": "10" }]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Usuarios",
+      "item": [
+        {
+          "name": "Listar usuarios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/usuarios",
+              "host": ["{{base_url}}"],
+              "path": ["api", "usuarios"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Detalle usuario",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "usuarios", "1"]
             }
           },
           "response": []

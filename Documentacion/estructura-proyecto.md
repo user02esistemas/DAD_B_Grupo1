@@ -30,10 +30,16 @@ Library                JARs necesarios para BoticaWebCliente.
 Postman                Colecciones de pruebas API.
 ```
 
+Documento de reparto del equipo:
+
+```text
+Documentacion/matriz-responsabilidades.md
+```
+
 ## BoticaAPIREST
 
 ```text
-src/main/java/pe/edu/botica/api/
+src/main/java/api/
 ├── auth/
 ├── productos/
 ├── ventas/
@@ -47,7 +53,7 @@ src/main/java/pe/edu/botica/api/
 ## BoticaRMIInterface
 
 ```text
-src/main/java/pe/edu/botica/rmi/
+src/main/java/rmi/
 ├── auth/
 ├── productos/
 ├── ventas/
@@ -60,7 +66,7 @@ src/main/java/pe/edu/botica/rmi/
 ## BoticaRMIServidor
 
 ```text
-src/main/java/pe/edu/botica/rmi/
+src/main/java/rmi/
 ├── server/
 ├── services/
 │   ├── auth/
@@ -72,6 +78,8 @@ src/main/java/pe/edu/botica/rmi/
 ├── config/
 └── util/
 ```
+
+Los paquetes actuales usan nombres cortos `api.*` y `rmi.*` para mantener la estructura simple del proyecto academico.
 
 ## BoticaMobileFlutter
 

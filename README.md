@@ -46,6 +46,17 @@ Web JSP -> Servlets Web -> RMI -> DAO/JDBC -> MySQL
 Flutter -> API JSON -> RMI -> DAO/JDBC -> MySQL
 ```
 
+## Equipo
+
+| Alumno | Rol en el proyecto | Responsabilidad principal |
+|---|---|---|
+| Escribano Macalopu Daniel Erick | Lider tecnico e integrador | Arquitectura distribuida, integracion general, GitHub y coordinacion del equipo |
+| Montenegro Villalobos Hector Samir | Desarrollador backend distribuido | Servicios Java RMI, API REST JSON y pruebas con Postman |
+| Capitan Leon Alexander Grabiel | Desarrollador web y base de datos | Cliente web JSP/Servlet, modelo MySQL, consultas, triggers y validaciones |
+| Mejia Quiroz Arnold Braian | Desarrollador movil y documentador | Flutter, consumo de API REST, manuales tecnicos y evidencias de prueba |
+
+La division sigue la guia del informe final: cada integrante debe evidenciar su aporte mediante commits, pruebas, documentacion, capturas o tareas completadas.
+
 ## Documentacion Tecnica
 
 ```text
@@ -86,16 +97,14 @@ Git/GitHub
 
 Nota: el Tomcat incluido en XAMPP puede usar `javax.servlet`, por eso para la aplicacion Java Web/API se recomienda Tomcat 10.1 con `jakarta.servlet`. XAMPP se usara principalmente para MySQL/MariaDB.
 
-## Fuera Del Repositorio
+## Flujo GitHub
 
-El informe Word, capturas pesadas, videos y anexos finales del curso deben mantenerse fuera de este repositorio para no mezclar evidencias academicas con el codigo fuente del sistema.
-
-La documentacion tecnica en Markdown si puede estar en `Documentacion/`.
-
-Estructura local sugerida:
+Antes de subir cambios:
 
 ```text
-PAF/
-├── EconoSalud/          Proyecto GitHub
-└── Entrega_Final/       Informe, capturas, diagramas y anexos
+1. Compilar los proyectos Maven.
+2. Probar endpoints principales en Postman.
+3. Revisar cambios con git status y git diff.
+4. Hacer commit con mensaje claro.
+5. Subir a GitHub.
 ```

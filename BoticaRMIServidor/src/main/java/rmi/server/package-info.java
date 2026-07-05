@@ -1,4 +1,4 @@
 /**
- * Arranque y publicacion del servidor RMI.
+ * Arranque y registro de servicios RMI.
  */
 package rmi.server;

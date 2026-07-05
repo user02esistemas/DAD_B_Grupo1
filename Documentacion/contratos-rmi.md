@@ -8,19 +8,19 @@ Regla principal:
 BoticaRMIInterface no contiene logica de negocio ni acceso a base de datos.
 ```
 
-## Paquetes Propuestos
+## Paquetes
 
 ```text
-pe.edu.botica.rmi.auth
-pe.edu.botica.rmi.productos
-pe.edu.botica.rmi.ventas
-pe.edu.botica.rmi.compras
-pe.edu.botica.rmi.reportes
-pe.edu.botica.rmi.dto
-pe.edu.botica.rmi.exception
+rmi.auth
+rmi.productos
+rmi.ventas
+rmi.compras
+rmi.reportes
+rmi.dto
+rmi.exception
 ```
 
-## Servicios Propuestos
+## Servicios
 
 | Servicio | Responsabilidad |
 |---|---|
@@ -33,6 +33,30 @@ pe.edu.botica.rmi.exception
 | `ProveedorServiceRMI` | Gestion de proveedores |
 | `DashboardServiceRMI` | Indicadores principales |
 | `ReporteServiceRMI` | Reportes operativos |
+
+## Servicios Publicados Actualmente
+
+```text
+AuthService
+UsuarioService
+ProductoService
+DashboardService
+ReporteService
+VentaService
+CompraService
+```
+
+## ReporteServiceRMI
+
+Metodos principales:
+
+```text
+reporteVentasPorFecha(fechaInicio, fechaFin)
+reporteComprasPorFecha(fechaInicio, fechaFin)
+obtenerResumenVentas(fechaInicio, fechaFin)
+obtenerVentasPorDia(fechaInicio, fechaFin)
+obtenerProductosMasVendidos(limite)
+```
 
 ## Reglas Para Cambiar Contratos
 
