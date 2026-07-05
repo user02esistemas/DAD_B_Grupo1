@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../core/network/api_client.dart';
-import '../../core/widgets/error_panel.dart';
-import 'product.dart';
-import 'product_service.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/widgets/error_panel.dart';
+import '../model/product.dart';
+import '../service/product_service.dart';
+import '../viewmodel/product_viewmodel.dart';
 
 class ProductsPage extends StatefulWidget {
   const ProductsPage({super.key});
@@ -14,28 +15,30 @@ class ProductsPage extends StatefulWidget {
 
 class _ProductsPageState extends State<ProductsPage> {
   final _searchController = TextEditingController(text: 'para');
-  late final ProductService _productService;
-  late Future<List<Product>> _productsFuture;
+  late final ProductViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
-    _productService = ProductService(ApiClient());
-    _productsFuture = _search();
+    _viewModel = ProductViewModel(ProductService(ApiClient()))..addListener(_onViewModelChanged);
+    _reload();
   }
 
   @override
   void dispose() {
+    _viewModel.removeListener(_onViewModelChanged);
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<List<Product>> _search() {
-    return _productService.search(term: _searchController.text.trim(), limit: 20);
+  void _onViewModelChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _reload() {
-    setState(() => _productsFuture = _search());
+    _viewModel.search(term: _searchController.text.trim(), limit: 20);
   }
 
   @override
@@ -56,35 +59,31 @@ class _ProductsPageState extends State<ProductsPage> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                FilledButton(onPressed: _reload, child: const Text('Buscar')),
+                FilledButton(onPressed: _viewModel.loading ? null : _reload, child: const Text('Buscar')),
               ],
             ),
           ),
-          Expanded(
-            child: FutureBuilder<List<Product>>(
-              future: _productsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return ErrorPanel(message: snapshot.error.toString(), onRetry: _reload);
-                }
-                final products = snapshot.data ?? const [];
-                if (products.isEmpty) {
-                  return const Center(child: Text('No se encontraron productos'));
-                }
-                return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  itemCount: products.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) => _ProductTile(product: products[index]),
-                );
-              },
-            ),
-          ),
+          Expanded(child: _buildBody()),
         ],
       ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_viewModel.loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_viewModel.error != null) {
+      return ErrorPanel(message: _viewModel.error!, onRetry: _reload);
+    }
+    if (_viewModel.products.isEmpty) {
+      return const Center(child: Text('No se encontraron productos'));
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      itemCount: _viewModel.products.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (context, index) => _ProductTile(product: _viewModel.products[index]),
     );
   }
 }

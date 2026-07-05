@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 
-import '../../core/network/api_client.dart';
-import '../../core/widgets/error_panel.dart';
-import '../auth/user.dart';
-import '../caja/caja_page.dart';
-import '../compras/compras_page.dart';
-import '../productos/products_page.dart';
-import '../reportes/reportes_page.dart';
-import '../usuarios/usuarios_page.dart';
-import '../ventas/ventas_page.dart';
-import 'dashboard_service.dart';
-import 'dashboard_summary.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/widgets/error_panel.dart';
+import '../../auth/model/user.dart';
+import '../../caja/view/caja_page.dart';
+import '../../compras/view/compras_page.dart';
+import '../../productos/view/products_page.dart';
+import '../../reportes/view/reportes_page.dart';
+import '../../usuarios/view/usuarios_page.dart';
+import '../../ventas/view/ventas_page.dart';
+import '../model/dashboard_summary.dart';
+import '../service/dashboard_service.dart';
+import '../viewmodel/dashboard_viewmodel.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({required this.user, super.key});
@@ -22,22 +23,35 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late final DashboardService _dashboardService;
-  late Future<DashboardSummary> _summaryFuture;
+  late final DashboardViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
-    _dashboardService = DashboardService(ApiClient());
-    _summaryFuture = _dashboardService.getSummary();
+    _viewModel = DashboardViewModel(DashboardService(ApiClient()))..addListener(_onViewModelChanged);
+    _viewModel.load();
+  }
+
+  @override
+  void dispose() {
+    _viewModel.removeListener(_onViewModelChanged);
+    super.dispose();
+  }
+
+  void _onViewModelChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _reload() {
-    setState(() => _summaryFuture = _dashboardService.getSummary());
+    _viewModel.load();
   }
 
   @override
   Widget build(BuildContext context) {
+    final summary = _viewModel.summary;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
@@ -45,40 +59,44 @@ class _HomePageState extends State<HomePage> {
           IconButton(onPressed: _reload, icon: const Icon(Icons.refresh)),
         ],
       ),
-      body: FutureBuilder<DashboardSummary>(
-        future: _summaryFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return ErrorPanel(message: snapshot.error.toString(), onRetry: _reload);
-          }
-          final summary = snapshot.data!;
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text('Hola, ${widget.user.nombreCompleto}', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 4),
-              Text('Roles: ${widget.user.rolesLabel}', style: Theme.of(context).textTheme.bodyMedium),
-              const SizedBox(height: 16),
-              _MetricCard(title: 'Ventas hoy', value: 'S/ ${summary.ventasHoy.toStringAsFixed(2)}'),
-              _MetricCard(title: 'Ventas registradas hoy', value: summary.cantidadVentasHoy.toString()),
-              _MetricCard(title: 'Ventas del mes', value: 'S/ ${summary.ventasMes.toStringAsFixed(2)}'),
-              _MetricCard(title: 'Compras hoy', value: 'S/ ${summary.comprasHoy.toStringAsFixed(2)}'),
-              _MetricCard(title: 'Productos activos', value: summary.totalProductos.toString()),
-              _MetricCard(title: 'Stock bajo', value: summary.stockBajo.toString()),
-              _MetricCard(title: 'Agotados', value: summary.agotados.toString()),
-              _MetricCard(title: 'Por vencer', value: summary.porVencer.toString()),
-              _MetricCard(title: 'Vencidos', value: summary.vencidos.toString()),
-              const SizedBox(height: 16),
-              Text('Modulos disponibles', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              _ModuleGrid(user: widget.user),
-            ],
-          );
-        },
-      ),
+      body: _viewModel.loading && summary == null
+          ? const Center(child: CircularProgressIndicator())
+          : _viewModel.error != null && summary == null
+              ? ErrorPanel(message: _viewModel.error!, onRetry: _reload)
+              : _DashboardContent(user: widget.user, summary: summary!),
+    );
+  }
+}
+
+class _DashboardContent extends StatelessWidget {
+  const _DashboardContent({required this.user, required this.summary});
+
+  final User user;
+  final DashboardSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text('Hola, ${user.nombreCompleto}', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 4),
+        Text('Roles: ${user.rolesLabel}', style: Theme.of(context).textTheme.bodyMedium),
+        const SizedBox(height: 16),
+        _MetricCard(title: 'Ventas hoy', value: 'S/ ${summary.ventasHoy.toStringAsFixed(2)}'),
+        _MetricCard(title: 'Ventas registradas hoy', value: summary.cantidadVentasHoy.toString()),
+        _MetricCard(title: 'Ventas del mes', value: 'S/ ${summary.ventasMes.toStringAsFixed(2)}'),
+        _MetricCard(title: 'Compras hoy', value: 'S/ ${summary.comprasHoy.toStringAsFixed(2)}'),
+        _MetricCard(title: 'Productos activos', value: summary.totalProductos.toString()),
+        _MetricCard(title: 'Stock bajo', value: summary.stockBajo.toString()),
+        _MetricCard(title: 'Agotados', value: summary.agotados.toString()),
+        _MetricCard(title: 'Por vencer', value: summary.porVencer.toString()),
+        _MetricCard(title: 'Vencidos', value: summary.vencidos.toString()),
+        const SizedBox(height: 16),
+        Text('Modulos disponibles', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        _ModuleGrid(user: user),
+      ],
     );
   }
 }

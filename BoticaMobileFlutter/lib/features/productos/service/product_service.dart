@@ -1,5 +1,5 @@
-import '../../core/network/api_client.dart';
-import 'product.dart';
+import '../../../core/network/api_client.dart';
+import '../model/product.dart';
 
 class ProductService {
   ProductService(this._apiClient);

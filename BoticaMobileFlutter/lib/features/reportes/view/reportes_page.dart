@@ -1,4 +1,4 @@
-import '../../core/widgets/module_placeholder_page.dart';
+import '../../../core/widgets/module_placeholder_page.dart';
 
 class ReportesPage extends ModulePlaceholderPage {
   const ReportesPage({super.key})

@@ -16,6 +16,15 @@ BoticaMobileFlutter -> BoticaAPIREST -> BoticaRMIInterface -> BoticaRMIServidor 
 
 La aplicacion movil consume unicamente JSON por HTTP. No debe abrir conexiones JDBC, no debe usar RMI directo y no debe conocer la estructura interna de MySQL.
 
+Internamente, `BoticaMobileFlutter` usa MVVM por feature:
+
+```text
+view -> viewmodel -> service -> core/network/api_client.dart -> BoticaAPIREST
+model <- parseo JSON desde service
+```
+
+Los servicios moviles solo llaman endpoints REST. Ningun `service` de Flutter invoca RMI ni consulta MySQL.
+
 Modulos moviles iniciales:
 
 | Modulo Flutter | Endpoint REST | Servicio RMI usado por API |

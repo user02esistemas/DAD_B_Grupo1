@@ -1,5 +1,5 @@
-import '../../core/network/api_client.dart';
-import 'user.dart';
+import '../../../core/network/api_client.dart';
+import '../model/user.dart';
 
 class AuthService {
   AuthService(this._apiClient);

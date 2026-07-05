@@ -1,4 +1,4 @@
-import '../../core/widgets/module_placeholder_page.dart';
+import '../../../core/widgets/module_placeholder_page.dart';
 
 class CajaPage extends ModulePlaceholderPage {
   const CajaPage({super.key})
