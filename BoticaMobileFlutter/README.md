@@ -32,12 +32,29 @@ core/config       URL base y configuracion general.
 core/network      Cliente HTTP que consume respuestas ApiResponse.
 core/widgets      Widgets compartidos.
 features/auth     Login y modelo de usuario.
+features/caja     Pendiente: apertura/cierre de caja y sesiones.
+features/compras  Pendiente: registro y consulta de compras.
 features/dashboard Indicadores principales.
 features/health   Verificacion API/RMI usando /api/health.
 features/productos Busqueda y listado de productos.
+features/reportes Pendiente: reportes operativos.
+features/usuarios Pendiente: administracion de usuarios segun permisos.
+features/ventas   Pendiente: registro y consulta de ventas.
 ```
 
 Regla: la app movil solo consume endpoints JSON de `BoticaAPIREST`. No debe conectarse directo a RMI ni a MySQL.
+
+## Roles y permisos
+
+La app movil debe respetar los mismos roles definidos en la web y en la base de datos:
+
+| Rol | Descripcion | Acceso movil esperado |
+|---|---|---|
+| `ROLE_ADMIN` | Administrador del sistema | Acceso completo a dashboard, productos, ventas, compras, reportes, usuarios y configuracion |
+| `ROLE_FARMACEUTICO` | Farmaceutico | Acceso operativo a ventas, productos, caja y consultas necesarias para atencion |
+| `ROLE_ALMACENERO` | Almacenero | Acceso a inventario, productos, compras y alertas de stock/vencimiento |
+
+El control visual en Flutter solo ayuda a ocultar opciones. La validacion real de permisos debe hacerse en la API/RMI igual que en el sistema web.
 
 ## Funcionalidad inicial
 
@@ -46,6 +63,16 @@ Login con /api/auth/login
 Estado API/RMI con /api/health
 Dashboard con /api/dashboard/resumen
 Busqueda de productos con /api/productos
+```
+
+## Modulos pendientes
+
+```text
+ventas      Registrar venta, listar ultimas ventas y validar stock.
+compras     Registrar compra y listar proveedores.
+caja        Abrir/cerrar sesion de caja y consultar estado.
+usuarios    Listar usuarios y administrar acceso segun rol.
+reportes    Ventas por rango y productos mas vendidos.
 ```
 
 ## Ejecucion
