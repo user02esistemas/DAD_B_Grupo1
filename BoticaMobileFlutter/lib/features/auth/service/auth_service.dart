@@ -18,4 +18,14 @@ class AuthService {
 
     return User.fromJson(result.data! as Map<String, dynamic>);
   }
+
+  Future<void> logout(String username) async {
+    final result = await _apiClient.post('/api/auth/logout', {
+      'username': username,
+    });
+
+    if (!result.success) {
+      throw Exception(result.message);
+    }
+  }
 }
