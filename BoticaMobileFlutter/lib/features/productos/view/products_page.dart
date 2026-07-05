@@ -50,22 +50,25 @@ class _ProductsPageState extends State<ProductsPage> {
   }
 
   Widget _buildBody() {
-    return ListView.separated(
+    final products = _viewModel.products;
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 90),
-      itemCount: _viewModel.products.length + 2,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (_, index) {
-        if (index == 0) {
-          return _InventoryHeader(controller: _searchController, loading: _viewModel.loading, onSearch: _reload, products: _viewModel.products);
-        }
-        if (index == 1) {
-          if (_viewModel.loading) return const _LoadingProductsCard();
-          if (_viewModel.error != null) return ErrorPanel(message: _viewModel.error!, onRetry: _reload);
-          if (_viewModel.products.isEmpty) return const _EmptyProductsCard();
-          return const SizedBox.shrink();
-        }
-        return _ProductCard(product: _viewModel.products[index - 2]);
-      },
+      children: [
+        _InventoryHeader(controller: _searchController, loading: _viewModel.loading, onSearch: _reload, products: products),
+        const SizedBox(height: 10),
+        if (_viewModel.loading) const _LoadingProductsCard(),
+        if (!_viewModel.loading && _viewModel.error != null) ErrorPanel(message: _viewModel.error!, onRetry: _reload),
+        if (!_viewModel.loading && _viewModel.error == null && products.isEmpty) const _EmptyProductsCard(),
+        if (!_viewModel.loading && products.isNotEmpty) ...[
+          Text('Inventario disponible', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+          const SizedBox(height: 10),
+          for (final product in products) ...[
+            _ProductCard(product: product),
+            const SizedBox(height: 10),
+          ],
+        ],
+      ],
     );
   }
 }

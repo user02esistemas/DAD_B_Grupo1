@@ -23,6 +23,20 @@ class ApiClient {
     return _parse(response);
   }
 
+  Future<ApiResult> put(String path, Map<String, Object?> body) async {
+    final response = await _httpClient.put(
+      _uri(path),
+      headers: const {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    return _parse(response);
+  }
+
+  Future<ApiResult> delete(String path) async {
+    final response = await _httpClient.delete(_uri(path));
+    return _parse(response);
+  }
+
   Uri _uri(String path, [Map<String, String?> query = const {}]) {
     final base = Uri.parse(AppConfig.apiBaseUrl);
     final cleanQuery = <String, String>{};
