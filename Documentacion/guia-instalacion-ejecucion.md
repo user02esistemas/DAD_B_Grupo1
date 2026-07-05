@@ -41,6 +41,24 @@ git status --short
 
 Debe estar en `main` y sin cambios locales.
 
+Si el integrante va a desarrollar, debe cambiar a su rama asignada:
+
+```powershell
+git fetch origin
+git checkout feature/backend-rmi-api
+```
+
+Ramas disponibles:
+
+```text
+develop
+feature/backend-rmi-api
+feature/web-cliente
+feature/mobile-flutter
+feature/database
+feature/documentacion
+```
+
 ## 3. Estructura Principal
 
 ```text
@@ -427,10 +445,40 @@ Seguir siempre este orden:
 
 ## 14. Actualizar Codigo Desde GitHub
 
-Antes de empezar a trabajar:
+Antes de empezar a trabajar, ubicarse en la rama asignada.
+
+Ejemplo para backend:
+
+```powershell
+git checkout feature/backend-rmi-api
+git pull origin feature/backend-rmi-api
+```
+
+Ejemplo para web:
+
+```powershell
+git checkout feature/web-cliente
+git pull origin feature/web-cliente
+```
+
+Ejemplo para movil:
+
+```powershell
+git checkout feature/mobile-flutter
+git pull origin feature/mobile-flutter
+```
+
+Si solo se quiere ejecutar la version estable del proyecto:
 
 ```powershell
 git pull origin main
+```
+
+Si se quiere probar la version de integracion:
+
+```powershell
+git checkout develop
+git pull origin develop
 ```
 
 Verificar estado:
@@ -441,7 +489,38 @@ git status --short
 
 Si aparecen cambios locales que no son tuyos, avisar al lider antes de sobrescribir o borrar archivos.
 
-## 15. Problemas Frecuentes
+## 15. Flujo De Trabajo Con Ramas
+
+Ramas del equipo:
+
+| Rama | Uso | Responsable principal |
+|---|---|---|
+| `main` | Version estable para entrega | Daniel |
+| `develop` | Integracion y pruebas generales | Daniel |
+| `feature/backend-rmi-api` | RMI, API REST y Postman | Daniel y Hector |
+| `feature/web-cliente` | Cliente web JSP/Servlet | Arnold y Daniel |
+| `feature/mobile-flutter` | App movil Flutter | Alexander y Daniel |
+| `feature/database` | SQL, datos, triggers y validaciones | Daniel con apoyo del equipo |
+| `feature/documentacion` | README, guias e informe tecnico | Daniel y Arnold |
+
+Flujo obligatorio:
+
+```text
+feature/* -> develop -> main
+```
+
+Para subir cambios en la rama asignada:
+
+```powershell
+git status --short
+git add .
+git commit -m "Describe el cambio realizado"
+git push
+```
+
+No hacer commits directos en `main` salvo integracion final aprobada por el lider.
+
+## 16. Problemas Frecuentes
 
 ### Error: No se pudo conectar con XService RMI
 
@@ -508,7 +587,7 @@ No compilar `BoticaAPIREST` aislado si primero no se instalo `BoticaRMIInterface
 
 Usar Tomcat 10.1 externo porque la API usa `jakarta.servlet`.
 
-## 16. Comandos Rapidos
+## 17. Comandos Rapidos
 
 Compilar todo:
 
@@ -537,10 +616,28 @@ git status --short
 Actualizar desde GitHub:
 
 ```powershell
-git pull origin main
+git pull
 ```
 
-## 17. Checklist Final
+Cambiar a rama backend:
+
+```powershell
+git checkout feature/backend-rmi-api
+```
+
+Cambiar a rama web:
+
+```powershell
+git checkout feature/web-cliente
+```
+
+Cambiar a rama movil:
+
+```powershell
+git checkout feature/mobile-flutter
+```
+
+## 18. Checklist Final
 
 Antes de decir que el proyecto esta funcionando, verificar:
 

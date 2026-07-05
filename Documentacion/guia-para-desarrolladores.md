@@ -52,15 +52,68 @@ El cliente no debe conectarse directo a la base de datos.
 
 ## Git
 
-Ramas sugeridas:
+Ramas oficiales:
 
 ```text
 main
 develop
-feature/rmi-productos
-feature/api-productos
-feature/flutter-productos
-feature/web-productos
+feature/backend-rmi-api
+feature/web-cliente
+feature/mobile-flutter
+feature/database
+feature/documentacion
+```
+
+Uso de ramas:
+
+| Rama | Uso | Responsable principal |
+|---|---|---|
+| `main` | Version estable y lista para presentar | Daniel |
+| `develop` | Integracion y pruebas antes de pasar a `main` | Daniel |
+| `feature/backend-rmi-api` | Contratos RMI, servidor RMI, API REST y Postman | Daniel y Hector |
+| `feature/web-cliente` | Cliente web JSP/Servlet y vistas | Arnold y Daniel |
+| `feature/mobile-flutter` | Aplicacion movil Flutter | Alexander y Daniel |
+| `feature/database` | Script SQL, triggers, datos y validaciones de base de datos | Daniel con apoyo del equipo |
+| `feature/documentacion` | README, guias tecnicas e informe | Daniel y Arnold |
+
+Flujo de trabajo:
+
+```text
+feature/* -> develop -> main
+```
+
+Reglas:
+
+- No trabajar directo en `main`.
+- Antes de iniciar, actualizar la rama propia con `git pull`.
+- Antes de pedir integracion, compilar y probar lo modificado.
+- Los cambios terminados se integran primero en `develop`.
+- `main` solo recibe cambios probados desde `develop`.
+
+Comandos para cambiar a la rama asignada:
+
+```powershell
+git fetch origin
+git checkout feature/backend-rmi-api
+git pull origin feature/backend-rmi-api
+```
+
+Ejemplos por integrante:
+
+```text
+Daniel: develop, feature/backend-rmi-api, feature/database, feature/documentacion
+Hector: feature/backend-rmi-api
+Alexander: feature/mobile-flutter
+Arnold: feature/web-cliente, feature/documentacion
+```
+
+Subir cambios de una rama:
+
+```powershell
+git status --short
+git add .
+git commit -m "Describe el cambio realizado"
+git push
 ```
 
 ## Reparto Del Equipo
@@ -87,7 +140,7 @@ Los porcentajes son referenciales y deben ajustarse al final segun commits, tare
 | Scripts SQL | Respaldar cambios en tablas, datos, triggers o consultas |
 | Documentacion Markdown | Sustentar arquitectura, endpoints, contratos y guias de ejecucion |
 
-Cada integrante debe trabajar sobre una parte clara, probarla y comunicar al lider que archivos modifico antes de integrar a `main`.
+Cada integrante debe trabajar sobre su rama, probar los cambios y comunicar al lider que archivos modifico antes de integrar a `develop`.
 
 ## Matriz RACI Base
 
@@ -112,4 +165,14 @@ Leyenda: R = responsable de ejecutar, A = responsable final, C = consultado, I =
 3. Reiniciar BoticaAPIREST en Tomcat si se agrego un endpoint.
 4. Probar en Postman los endpoints afectados.
 5. Revisar git status y git diff.
+```
+
+## Antes De Integrar A Develop
+
+```text
+1. Confirmar que la rama feature compila.
+2. Probar los endpoints o pantallas afectadas.
+3. Subir la rama a GitHub.
+4. Avisar al lider con resumen de cambios.
+5. Integrar en develop solo si no rompe el proyecto.
 ```

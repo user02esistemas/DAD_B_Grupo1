@@ -99,12 +99,26 @@ Nota: el Tomcat incluido en XAMPP puede usar `javax.servlet`, por eso para la ap
 
 ## Flujo GitHub
 
+Ramas del proyecto:
+
+| Rama | Uso | Responsable principal |
+|---|---|---|
+| `main` | Version estable del proyecto | Daniel |
+| `develop` | Integracion antes de pasar a `main` | Daniel |
+| `feature/backend-rmi-api` | RMI, API REST, DTOs y Postman | Daniel y Hector |
+| `feature/web-cliente` | Cliente web JSP/Servlet | Arnold y Daniel |
+| `feature/mobile-flutter` | App movil Flutter | Alexander y Daniel |
+| `feature/database` | Base de datos, datos y triggers | Daniel con apoyo del equipo |
+| `feature/documentacion` | README, guias e informe tecnico | Daniel y Arnold |
+
+Regla principal: nadie debe trabajar directo en `main`. Los cambios se hacen en ramas `feature/*`, se integran primero en `develop`, se prueban y luego pasan a `main`.
+
 Antes de subir cambios:
 
 ```text
 1. Compilar los proyectos Maven.
 2. Probar endpoints principales en Postman.
 3. Revisar cambios con git status y git diff.
-4. Hacer commit con mensaje claro.
-5. Subir a GitHub.
+4. Hacer commit con mensaje claro en la rama correspondiente.
+5. Subir a GitHub y avisar al lider para integracion.
 ```
