@@ -18,9 +18,7 @@
 BoticaMobileFlutter/build/
 BoticaMobileFlutter/.dart_tool/
 BoticaMobileFlutter/.idea/
-BoticaMobileFlutter/.metadata
 BoticaMobileFlutter/.packages
-BoticaMobileFlutter/pubspec.lock
 
 # Sistema operativo
 .DS_Store

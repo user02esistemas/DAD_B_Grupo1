@@ -14,6 +14,16 @@ BoticaWebCliente -> BoticaRMIInterface -> BoticaRMIServidor -> MySQL/MariaDB
 BoticaMobileFlutter -> BoticaAPIREST -> BoticaRMIInterface -> BoticaRMIServidor -> MySQL/MariaDB
 ```
 
+La aplicacion movil consume unicamente JSON por HTTP. No debe abrir conexiones JDBC, no debe usar RMI directo y no debe conocer la estructura interna de MySQL.
+
+Modulos moviles iniciales:
+
+| Modulo Flutter | Endpoint REST | Servicio RMI usado por API |
+|---|---|---|
+| Auth | `/api/auth/login` | `AuthService` |
+| Dashboard | `/api/dashboard/resumen` | `DashboardService` |
+| Productos | `/api/productos` | `ProductoService` |
+
 ## Componentes
 
 ```text
