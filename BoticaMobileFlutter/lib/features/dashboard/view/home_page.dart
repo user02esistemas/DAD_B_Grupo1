@@ -54,7 +54,7 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const Text('EconoSalud'),
         actions: [
           IconButton(onPressed: _reload, icon: const Icon(Icons.refresh)),
         ],
@@ -77,26 +77,109 @@ class _DashboardContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
-        Text('Hola, ${user.nombreCompleto}', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 4),
-        Text('Roles: ${user.rolesLabel}', style: Theme.of(context).textTheme.bodyMedium),
-        const SizedBox(height: 16),
-        _MetricCard(title: 'Ventas hoy', value: 'S/ ${summary.ventasHoy.toStringAsFixed(2)}'),
-        _MetricCard(title: 'Ventas registradas hoy', value: summary.cantidadVentasHoy.toString()),
-        _MetricCard(title: 'Ventas del mes', value: 'S/ ${summary.ventasMes.toStringAsFixed(2)}'),
-        _MetricCard(title: 'Compras hoy', value: 'S/ ${summary.comprasHoy.toStringAsFixed(2)}'),
-        _MetricCard(title: 'Productos activos', value: summary.totalProductos.toString()),
-        _MetricCard(title: 'Stock bajo', value: summary.stockBajo.toString()),
-        _MetricCard(title: 'Agotados', value: summary.agotados.toString()),
-        _MetricCard(title: 'Por vencer', value: summary.porVencer.toString()),
-        _MetricCard(title: 'Vencidos', value: summary.vencidos.toString()),
-        const SizedBox(height: 16),
-        Text('Modulos disponibles', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
+        _WelcomeCard(user: user, summary: summary),
+        const SizedBox(height: 18),
+        Text('Resumen del dia', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = constraints.maxWidth >= 720 ? 3 : 2;
+            return GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: columns,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: constraints.maxWidth >= 720 ? 2.45 : 1.55,
+              children: [
+                _MetricCard(title: 'Ventas hoy', value: 'S/ ${summary.ventasHoy.toStringAsFixed(2)}', icon: Icons.payments_rounded),
+                _MetricCard(title: 'Ventas', value: summary.cantidadVentasHoy.toString(), icon: Icons.receipt_long_rounded),
+                _MetricCard(title: 'Mes', value: 'S/ ${summary.ventasMes.toStringAsFixed(2)}', icon: Icons.calendar_month_rounded),
+                _MetricCard(title: 'Compras', value: 'S/ ${summary.comprasHoy.toStringAsFixed(2)}', icon: Icons.inventory_2_rounded),
+                _MetricCard(title: 'Productos', value: summary.totalProductos.toString(), icon: Icons.medication_rounded),
+                _MetricCard(title: 'Vencidos', value: summary.vencidos.toString(), icon: Icons.warning_amber_rounded, danger: summary.vencidos > 0),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 18),
+        Text('Modulos disponibles', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+        const SizedBox(height: 10),
         _ModuleGrid(user: user),
       ],
+    );
+  }
+}
+
+class _WelcomeCard extends StatelessWidget {
+  const _WelcomeCard({required this.user, required this.summary});
+
+  final User user;
+  final DashboardSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF087B68), Color(0xFF12A58D)],
+        ),
+        boxShadow: [
+          BoxShadow(color: const Color(0xFF087B68).withValues(alpha: 0.22), blurRadius: 24, offset: const Offset(0, 12)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Hola, ${user.nombreCompleto}', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 6),
+                Text('Rol: ${user.rolesLabel}', style: const TextStyle(color: Colors.white70)),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _StatusChip(label: '${summary.totalProductos} productos'),
+                    _StatusChip(label: '${summary.stockBajo} stock bajo'),
+                    _StatusChip(label: '${summary.vencidos} vencidos'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(24)),
+            child: const Icon(Icons.local_pharmacy_rounded, color: Colors.white, size: 42),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(999)),
+      child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
     );
   }
 }
@@ -110,51 +193,63 @@ class _ModuleGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final modules = <_ModuleItem>[
       if (user.canViewProductos)
-        const _ModuleItem('Productos', Icons.medication_rounded, ProductsPage()),
+        const _ModuleItem('Productos', 'Inventario y busqueda', Icons.medication_rounded, Color(0xFF087B68), ProductsPage()),
       if (user.canViewVentas)
-        const _ModuleItem('Ventas', Icons.point_of_sale_rounded, VentasPage()),
+        const _ModuleItem('Ventas', 'Registro operativo', Icons.point_of_sale_rounded, Color(0xFF1C7ED6), VentasPage()),
       if (user.canViewCompras)
-        const _ModuleItem('Compras', Icons.inventory_2_rounded, ComprasPage()),
+        const _ModuleItem('Compras', 'Abastecimiento', Icons.inventory_2_rounded, Color(0xFF6741D9), ComprasPage()),
       if (user.canViewCaja)
-        const _ModuleItem('Caja', Icons.account_balance_wallet_rounded, CajaPage()),
+        const _ModuleItem('Caja', 'Control de efectivo', Icons.account_balance_wallet_rounded, Color(0xFFE67700), CajaPage()),
       if (user.canViewReportes)
-        const _ModuleItem('Reportes', Icons.bar_chart_rounded, ReportesPage()),
+        const _ModuleItem('Reportes', 'Indicadores y rangos', Icons.bar_chart_rounded, Color(0xFFC2255C), ReportesPage()),
       if (user.canViewUsuarios)
-        const _ModuleItem('Usuarios', Icons.group_rounded, UsuariosPage()),
+        const _ModuleItem('Usuarios', 'Acceso administrativo', Icons.group_rounded, Color(0xFF364FC7), UsuariosPage()),
     ];
 
     if (modules.isEmpty) {
       return const Card(child: ListTile(title: Text('No hay modulos disponibles para este rol')));
     }
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 1.35,
-      ),
-      itemCount: modules.length,
-      itemBuilder: (context, index) {
-        final module = modules[index];
-        return Card(
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => module.page)),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(module.icon, size: 34, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(height: 8),
-                  Text(module.title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 720 ? 3 : 2;
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: constraints.maxWidth >= 720 ? 1.65 : 1.08,
           ),
+          itemCount: modules.length,
+          itemBuilder: (context, index) {
+            final module = modules[index];
+            return Card(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(22),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => module.page)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(color: module.color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(16)),
+                        child: Icon(module.icon, color: module.color, size: 28),
+                      ),
+                      const Spacer(),
+                      Text(module.title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 4),
+                      Text(module.subtitle, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.black54)),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -162,25 +257,44 @@ class _ModuleGrid extends StatelessWidget {
 }
 
 class _ModuleItem {
-  const _ModuleItem(this.title, this.icon, this.page);
+  const _ModuleItem(this.title, this.subtitle, this.icon, this.color, this.page);
 
   final String title;
+  final String subtitle;
   final IconData icon;
+  final Color color;
   final Widget page;
 }
 
 class _MetricCard extends StatelessWidget {
-  const _MetricCard({required this.title, required this.value});
+  const _MetricCard({required this.title, required this.value, required this.icon, this.danger = false});
 
   final String title;
   final String value;
+  final IconData icon;
+  final bool danger;
 
   @override
   Widget build(BuildContext context) {
+    final color = danger ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary;
+
     return Card(
-      child: ListTile(
-        title: Text(title),
-        trailing: Text(value, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 20, color: color),
+                const SizedBox(width: 8),
+                Expanded(child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.black54))),
+              ],
+            ),
+            Text(value, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900, color: const Color(0xFF12332D))),
+          ],
+        ),
       ),
     );
   }
