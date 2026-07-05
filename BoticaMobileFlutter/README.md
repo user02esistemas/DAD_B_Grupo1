@@ -63,6 +63,7 @@ Login con /api/auth/login
 Estado API/RMI con /api/health
 Dashboard con /api/dashboard/resumen
 Busqueda de productos con /api/productos
+Menu de modulos filtrado por roles del usuario autenticado
 ```
 
 ## Modulos pendientes
