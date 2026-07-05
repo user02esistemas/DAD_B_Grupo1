@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import rmi.config.DatabaseConfig;
@@ -99,6 +100,102 @@ public class UsuarioDAO {
             throw new IllegalStateException("Error al listar roles", ex);
         }
         return roles;
+    }
+
+    public Long insertar(UsuarioDTO usuario) {
+        String sql = "INSERT INTO usuarios (username, password, email, nombre_completo, dni, telefono, activo) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, usuario.getUsername());
+            ps.setString(2, usuario.getPassword());
+            ps.setString(3, usuario.getEmail());
+            ps.setString(4, usuario.getNombreCompleto());
+            ps.setString(5, usuario.getDni());
+            ps.setString(6, usuario.getTelefono());
+            ps.setBoolean(7, usuario.isActivo());
+            ps.executeUpdate();
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) {
+                    return keys.getLong(1);
+                }
+            }
+            throw new IllegalStateException("No se obtuvo id de usuario creado");
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al registrar usuario", ex);
+        }
+    }
+
+    public boolean actualizar(UsuarioDTO usuario) {
+        String sql = "UPDATE usuarios SET username = ?, email = ?, nombre_completo = ?, dni = ?, telefono = ?, activo = ? WHERE id = ?";
+
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, usuario.getUsername());
+            ps.setString(2, usuario.getEmail());
+            ps.setString(3, usuario.getNombreCompleto());
+            ps.setString(4, usuario.getDni());
+            ps.setString(5, usuario.getTelefono());
+            ps.setBoolean(6, usuario.isActivo());
+            ps.setLong(7, usuario.getId());
+            return ps.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al actualizar usuario", ex);
+        }
+    }
+
+    public boolean desactivar(Long id) {
+        String sql = "UPDATE usuarios SET activo = 0 WHERE id = ?";
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setLong(1, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al desactivar usuario", ex);
+        }
+    }
+
+    public boolean actualizarPassword(Long usuarioId, String nuevaPasswordHash) {
+        String sql = "UPDATE usuarios SET password = ? WHERE id = ?";
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, nuevaPasswordHash);
+            ps.setLong(2, usuarioId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al actualizar password", ex);
+        }
+    }
+
+    public boolean asignarRoles(Long usuarioId, List<Long> rolesIds) {
+        String deleteSql = "DELETE FROM usuario_roles WHERE usuario_id = ?";
+        String insertSql = "INSERT INTO usuario_roles (usuario_id, rol_id) VALUES (?, ?)";
+
+        try (Connection con = DatabaseConfig.getConnection()) {
+            con.setAutoCommit(false);
+            try (PreparedStatement delete = con.prepareStatement(deleteSql)) {
+                delete.setLong(1, usuarioId);
+                delete.executeUpdate();
+            }
+            if (rolesIds != null && !rolesIds.isEmpty()) {
+                try (PreparedStatement insert = con.prepareStatement(insertSql)) {
+                    for (Long rolId : rolesIds) {
+                        if (rolId == null) {
+                            continue;
+                        }
+                        insert.setLong(1, usuarioId);
+                        insert.setLong(2, rolId);
+                        insert.addBatch();
+                    }
+                    insert.executeBatch();
+                }
+            }
+            con.commit();
+            return true;
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al asignar roles", ex);
+        }
     }
 
     private boolean existe(String sql, String value) {
