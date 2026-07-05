@@ -3,7 +3,12 @@ import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
 import '../../core/widgets/error_panel.dart';
 import '../auth/user.dart';
+import '../caja/caja_page.dart';
+import '../compras/compras_page.dart';
 import '../productos/products_page.dart';
+import '../reportes/reportes_page.dart';
+import '../usuarios/usuarios_page.dart';
+import '../ventas/ventas_page.dart';
 import 'dashboard_service.dart';
 import 'dashboard_summary.dart';
 
@@ -54,6 +59,8 @@ class _HomePageState extends State<HomePage> {
             padding: const EdgeInsets.all(16),
             children: [
               Text('Hola, ${widget.user.nombreCompleto}', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 4),
+              Text('Roles: ${widget.user.rolesLabel}', style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 16),
               _MetricCard(title: 'Ventas hoy', value: 'S/ ${summary.ventasHoy.toStringAsFixed(2)}'),
               _MetricCard(title: 'Ventas registradas hoy', value: summary.cantidadVentasHoy.toString()),
@@ -64,19 +71,84 @@ class _HomePageState extends State<HomePage> {
               _MetricCard(title: 'Agotados', value: summary.agotados.toString()),
               _MetricCard(title: 'Por vencer', value: summary.porVencer.toString()),
               _MetricCard(title: 'Vencidos', value: summary.vencidos.toString()),
+              const SizedBox(height: 16),
+              Text('Modulos disponibles', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              _ModuleGrid(user: widget.user),
             ],
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProductsPage()));
-        },
-        icon: const Icon(Icons.search),
-        label: const Text('Productos'),
-      ),
     );
   }
+}
+
+class _ModuleGrid extends StatelessWidget {
+  const _ModuleGrid({required this.user});
+
+  final User user;
+
+  @override
+  Widget build(BuildContext context) {
+    final modules = <_ModuleItem>[
+      if (user.canViewProductos)
+        const _ModuleItem('Productos', Icons.medication_rounded, ProductsPage()),
+      if (user.canViewVentas)
+        const _ModuleItem('Ventas', Icons.point_of_sale_rounded, VentasPage()),
+      if (user.canViewCompras)
+        const _ModuleItem('Compras', Icons.inventory_2_rounded, ComprasPage()),
+      if (user.canViewCaja)
+        const _ModuleItem('Caja', Icons.account_balance_wallet_rounded, CajaPage()),
+      if (user.canViewReportes)
+        const _ModuleItem('Reportes', Icons.bar_chart_rounded, ReportesPage()),
+      if (user.canViewUsuarios)
+        const _ModuleItem('Usuarios', Icons.group_rounded, UsuariosPage()),
+    ];
+
+    if (modules.isEmpty) {
+      return const Card(child: ListTile(title: Text('No hay modulos disponibles para este rol')));
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        childAspectRatio: 1.35,
+      ),
+      itemCount: modules.length,
+      itemBuilder: (context, index) {
+        final module = modules[index];
+        return Card(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => module.page)),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(module.icon, size: 34, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(height: 8),
+                  Text(module.title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ModuleItem {
+  const _ModuleItem(this.title, this.icon, this.page);
+
+  final String title;
+  final IconData icon;
+  final Widget page;
 }
 
 class _MetricCard extends StatelessWidget {
