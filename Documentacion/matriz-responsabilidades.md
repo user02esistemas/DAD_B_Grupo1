@@ -6,19 +6,19 @@ Proyecto: EconoSalud, sistema distribuido para gestion de botica.
 
 | Integrante | Rol asignado | Responsabilidad core en capas |
 |---|---|---|
-| Escribano Macalopu Daniel Erick | Lider tecnico e integrador | Coordinacion, arquitectura distribuida, integracion, GitHub y documentacion principal |
-| Montenegro Villalobos Hector Samir | Desarrollador backend distribuido | Servicios Java RMI, API REST JSON y pruebas con Postman |
-| Capitan Leon Alexander Grabiel | Desarrollador web y base de datos | Cliente web JSP/Servlet, modelo MySQL/MariaDB, consultas y reglas transaccionales |
-| Mejia Quiroz Arnold Braian | Desarrollador movil y documentador | Aplicacion Flutter, consumo de API REST, manuales y evidencias tecnicas |
+| Escribano Macalopu Daniel Erick | Lider tecnico e integrador full stack | Coordinacion, arquitectura distribuida, backend RMI/API, apoyo en web y movil, integracion, GitHub y documentacion principal |
+| Montenegro Villalobos Hector Samir | Desarrollador backend distribuido | Servicios Java RMI, API REST JSON, DTOs y pruebas con Postman |
+| Capitan Leon Alexander Grabiel | Desarrollador movil | Aplicacion Flutter, consumo de API REST, pantallas moviles y evidencias tecnicas |
+| Mejia Quiroz Arnold Braian | Desarrollador web y documentador | Cliente web JSP/Servlet, apoyo en MySQL/MariaDB, manuales y evidencias tecnicas |
 
 ## Contribucion Individual
 
 | Integrante | Principales actividades realizadas o asignadas | Evidencia objetiva esperada | Porcentaje referencial |
 |---|---|---|---|
-| Escribano Macalopu Daniel Erick | Definicion de arquitectura, organizacion del repositorio, integracion de componentes, revision de compilacion y actualizacion de README/documentacion | Commits, estructura del repositorio, README, documentacion tecnica, pruebas generales | 30% |
-| Montenegro Villalobos Hector Samir | Implementacion de servicios RMI, endpoints REST, DTOs compartidos, respuestas JSON y colecciones Postman | Clases Java RMI/API, capturas Postman, endpoints probados | 25% |
-| Capitan Leon Alexander Grabiel | Mantenimiento del sistema web heredado, revision del esquema SQL, consultas, triggers de inventario y validaciones de negocio | Scripts SQL, capturas web, consultas ejecutadas, pruebas de stock | 25% |
-| Mejia Quiroz Arnold Braian | Desarrollo Flutter, conexion HTTP con API REST, pantallas moviles, manuales de uso y evidencias de ejecucion | Codigo Flutter, capturas moviles, pruebas de consumo API, manuales | 20% |
+| Escribano Macalopu Daniel Erick | Definicion de arquitectura, organizacion del repositorio, implementacion e integracion backend RMI/API, apoyo en web y movil, revision de compilacion y actualizacion de README/documentacion | Commits, clases RMI/API, estructura del repositorio, README, documentacion tecnica, pruebas generales | 35% |
+| Montenegro Villalobos Hector Samir | Implementacion backend de servicios RMI, endpoints REST, DTOs compartidos, respuestas JSON y colecciones Postman | Clases Java RMI/API, capturas Postman, endpoints probados | 25% |
+| Capitan Leon Alexander Grabiel | Desarrollo Flutter, conexion HTTP con API REST, pantallas moviles y evidencias de ejecucion | Codigo Flutter, capturas moviles, pruebas de consumo API | 20% |
+| Mejia Quiroz Arnold Braian | Mantenimiento del sistema web heredado, apoyo en consultas SQL, documentacion, manuales de uso y evidencias web | Cambios en web, capturas web, consultas verificadas, manuales | 20% |
 
 ## Matriz RACI
 
@@ -26,13 +26,13 @@ Proyecto: EconoSalud, sistema distribuido para gestion de botica.
 |---|---|---|---|---|
 | Levantamiento de requerimientos | A/R | C | C | C |
 | Diseno de arquitectura distribuida | A/R | C | C | C |
-| Base de datos y reglas transaccionales | A | C | R | I |
-| Contratos Java RMI | A | R | C | I |
-| Servidor RMI | A | R | C | I |
-| API REST JSON | A | R | C | C |
-| Cliente web JSP/Servlet | A | C | R | I |
-| Aplicacion movil Flutter | A | C | I | R |
-| Pruebas Postman | A | R | C | C |
+| Base de datos y reglas transaccionales | A/R | C | I | C |
+| Contratos Java RMI | A/R | R | C | I |
+| Servidor RMI | A/R | R | C | I |
+| API REST JSON | A/R | R | C | C |
+| Cliente web JSP/Servlet | A/R | C | I | R |
+| Aplicacion movil Flutter | A/R | C | R | I |
+| Pruebas Postman | A/R | R | C | C |
 | Documentacion tecnica | A/R | C | C | R |
 | Integracion GitHub | A/R | C | C | C |
 

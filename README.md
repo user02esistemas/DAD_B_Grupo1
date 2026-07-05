@@ -50,10 +50,10 @@ Flutter -> API JSON -> RMI -> DAO/JDBC -> MySQL
 
 | Alumno | Rol en el proyecto | Responsabilidad principal |
 |---|---|---|
-| Escribano Macalopu Daniel Erick | Lider tecnico e integrador | Arquitectura distribuida, integracion general, GitHub y coordinacion del equipo |
-| Montenegro Villalobos Hector Samir | Desarrollador backend distribuido | Servicios Java RMI, API REST JSON y pruebas con Postman |
-| Capitan Leon Alexander Grabiel | Desarrollador web y base de datos | Cliente web JSP/Servlet, modelo MySQL, consultas, triggers y validaciones |
-| Mejia Quiroz Arnold Braian | Desarrollador movil y documentador | Flutter, consumo de API REST, manuales tecnicos y evidencias de prueba |
+| Escribano Macalopu Daniel Erick | Lider tecnico e integrador full stack | Arquitectura distribuida, backend RMI/API, apoyo en web y movil, GitHub e integracion general |
+| Montenegro Villalobos Hector Samir | Desarrollador backend distribuido | Servicios Java RMI, API REST JSON, DTOs y pruebas con Postman |
+| Capitan Leon Alexander Grabiel | Desarrollador movil | Flutter, consumo de API REST, pantallas moviles y evidencias de prueba |
+| Mejia Quiroz Arnold Braian | Desarrollador web y documentador | Cliente web JSP/Servlet, apoyo en base de datos, manuales tecnicos y evidencias |
 
 La division sigue la guia del informe final: cada integrante debe evidenciar su aporte mediante commits, pruebas, documentacion, capturas o tareas completadas.
 

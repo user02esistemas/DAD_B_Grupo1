@@ -69,10 +69,10 @@ Matriz base de responsabilidades para el informe y la organizacion del desarroll
 
 | Integrante | Rol desempenado | Capa o modulo principal | Actividades principales | Evidencia objetiva | Contribucion referencial |
 |---|---|---|---|---|---|
-| Escribano Macalopu Daniel Erick | Lider tecnico e integrador | Arquitectura, integracion y GitHub | Coordinar estructura distribuida, integrar modulos, revisar compilacion, mantener repositorio y documentacion principal | Commits de integracion, README, arquitectura, historial GitHub, pruebas generales | 30% |
-| Montenegro Villalobos Hector Samir | Desarrollador backend distribuido | RMI, API REST y Postman | Implementar contratos RMI, servicios remotos, endpoints JSON, manejo de respuestas y pruebas API | Clases RMI/API, coleccion Postman, evidencias de endpoints funcionando | 25% |
-| Capitan Leon Alexander Grabiel | Desarrollador web y base de datos | JSP/Servlet, MySQL/MariaDB | Mantener cliente web heredado, revisar modelo relacional, consultas SQL, triggers de stock y validaciones del negocio | Scripts SQL, cambios en web, consultas verificadas, capturas de flujo web | 25% |
-| Mejia Quiroz Arnold Braian | Desarrollador movil y documentador | Flutter, consumo API y documentacion | Construir app movil, consumir endpoints REST, documentar uso, preparar manuales y evidencias de prueba | Pantallas Flutter, consumo HTTP, manuales, capturas y pruebas moviles | 20% |
+| Escribano Macalopu Daniel Erick | Lider tecnico e integrador full stack | Arquitectura, backend, web, movil, integracion y GitHub | Coordinar estructura distribuida, implementar e integrar backend RMI/API, apoyar web y movil, revisar compilacion, mantener repositorio y documentacion principal | Commits de integracion, clases RMI/API, README, arquitectura, historial GitHub, pruebas generales | 35% |
+| Montenegro Villalobos Hector Samir | Desarrollador backend distribuido | RMI, API REST y Postman | Implementar contratos RMI, servicios remotos, endpoints JSON, manejo de respuestas y pruebas API junto al lider | Clases RMI/API, coleccion Postman, evidencias de endpoints funcionando | 25% |
+| Capitan Leon Alexander Grabiel | Desarrollador movil | Flutter, consumo API y pruebas moviles | Construir app movil, consumir endpoints REST, validar pantallas moviles y registrar evidencias de ejecucion | Pantallas Flutter, consumo HTTP, capturas y pruebas moviles | 20% |
+| Mejia Quiroz Arnold Braian | Desarrollador web y documentador | JSP/Servlet, web, documentacion y apoyo en base de datos | Mantener cliente web heredado, apoyar consultas SQL, documentar uso, preparar manuales y evidencias de prueba | Cambios en web, capturas de flujo web, manuales, documentacion y consultas verificadas | 20% |
 
 Los porcentajes son referenciales y deben ajustarse al final segun commits, tareas completadas y evidencias reales.
 
@@ -94,11 +94,11 @@ Cada integrante debe trabajar sobre una parte clara, probarla y comunicar al lid
 | Actividad | Daniel | Hector | Alexander | Arnold |
 |---|---|---|---|---|
 | Arquitectura distribuida | A/R | C | C | C |
-| Contratos e implementacion RMI | A | R | C | I |
-| API REST y Postman | A | R | C | C |
-| Base de datos MySQL/MariaDB | A | C | R | I |
-| Cliente web JSP/Servlet | A | C | R | I |
-| App movil Flutter | A | C | I | R |
+| Contratos e implementacion RMI | A/R | R | C | I |
+| API REST y Postman | A/R | R | C | C |
+| Base de datos MySQL/MariaDB | A/R | C | I | C |
+| Cliente web JSP/Servlet | A/R | C | I | R |
+| App movil Flutter | A/R | C | R | I |
 | Documentacion tecnica | A/R | C | C | R |
 | Integracion GitHub | A/R | C | C | C |
 
