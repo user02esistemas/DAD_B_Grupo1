@@ -11,9 +11,9 @@ class User {
   final String nombreCompleto;
   final List<Role> roles;
 
-  bool get isAdmin => hasRole('ROLE_ADMIN');
-  bool get isFarmaceutico => hasRole('ROLE_FARMACEUTICO');
-  bool get isAlmacenero => hasRole('ROLE_ALMACENERO');
+  bool get isAdmin => hasRole('ADMIN');
+  bool get isFarmaceutico => hasRole('FARMACEUTICO');
+  bool get isAlmacenero => hasRole('ALMACENERO');
 
   bool get canViewDashboard => roles.isNotEmpty;
   bool get canViewProductos => isAdmin || isFarmaceutico || isAlmacenero;
@@ -23,13 +23,13 @@ class User {
   bool get canViewReportes => isAdmin || isFarmaceutico || isAlmacenero;
   bool get canViewUsuarios => isAdmin;
 
-  bool hasRole(String roleName) => roles.any((role) => role.nombre == roleName);
+  bool hasRole(String roleName) => roles.any((role) => role.normalizedName == roleName);
 
   String get rolesLabel {
     if (roles.isEmpty) {
       return 'Sin rol asignado';
     }
-    return roles.map((role) => role.nombre.replaceFirst('ROLE_', '')).join(', ');
+    return roles.map((role) => role.normalizedName).join(', ');
   }
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -51,6 +51,8 @@ class Role {
   final int id;
   final String nombre;
   final String descripcion;
+
+  String get normalizedName => nombre.replaceFirst('ROLE_', '');
 
   factory Role.fromJson(Map<String, dynamic> json) {
     return Role(
