@@ -1,15 +1,19 @@
-import '../../../core/widgets/module_placeholder_page.dart';
+import 'package:flutter/material.dart';
 
-class ComprasPage extends ModulePlaceholderPage {
-  const ComprasPage({super.key})
-      : super(
-          title: 'Compras',
-          description: 'Modulo para registrar compras y abastecimiento de inventario.',
-          nextSteps: const [
-            'Consumir GET /api/compras/proveedores',
-            'Seleccionar proveedor y productos',
-            'Registrar compra con POST /api/compras',
-            'Verificar incremento de stock',
-          ],
-        );
+import '../../../core/widgets/operational_module_page.dart';
+
+class ComprasPage extends StatelessWidget {
+  const ComprasPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return OperationalModulePage(
+      title: 'Compras',
+      description: 'Compras recientes y abastecimiento registrado en inventario.',
+      icon: Icons.inventory_2_rounded,
+      color: const Color(0xFF6741D9),
+      primaryAction: 'Compras recientes',
+      loader: (service) => service.purchases(),
+    );
+  }
 }

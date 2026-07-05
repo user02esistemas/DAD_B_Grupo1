@@ -1,15 +1,19 @@
-import '../../../core/widgets/module_placeholder_page.dart';
+import 'package:flutter/material.dart';
 
-class UsuariosPage extends ModulePlaceholderPage {
-  const UsuariosPage({super.key})
-      : super(
-          title: 'Usuarios',
-          description: 'Modulo administrativo restringido a ROLE_ADMIN.',
-          nextSteps: const [
-            'Consumir GET /api/usuarios',
-            'Consultar detalle con GET /api/usuarios/{id}',
-            'Definir endpoints de creacion/edicion si se requieren en movil',
-            'Validar permisos en API/RMI',
-          ],
-        );
+import '../../../core/widgets/operational_module_page.dart';
+
+class UsuariosPage extends StatelessWidget {
+  const UsuariosPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return OperationalModulePage(
+      title: 'Usuarios',
+      description: 'Personal activo, roles asignados y acceso administrativo.',
+      icon: Icons.group_rounded,
+      color: const Color(0xFF364FC7),
+      primaryAction: 'Usuarios registrados',
+      loader: (service) => service.users(),
+    );
+  }
 }

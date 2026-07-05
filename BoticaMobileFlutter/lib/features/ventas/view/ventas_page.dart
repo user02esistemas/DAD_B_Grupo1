@@ -1,15 +1,19 @@
-import '../../../core/widgets/module_placeholder_page.dart';
+import 'package:flutter/material.dart';
 
-class VentasPage extends ModulePlaceholderPage {
-  const VentasPage({super.key})
-      : super(
-          title: 'Ventas',
-          description: 'Modulo operativo para registrar ventas y consultar las ultimas transacciones.',
-          nextSteps: const [
-            'Consumir GET /api/ventas/ultimas',
-            'Crear carrito de productos',
-            'Registrar venta con POST /api/ventas',
-            'Validar stock antes de confirmar',
-          ],
-        );
+import '../../../core/widgets/operational_module_page.dart';
+
+class VentasPage extends StatelessWidget {
+  const VentasPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return OperationalModulePage(
+      title: 'Ventas',
+      description: 'Ultimas ventas registradas, metodo de pago y estado de comprobante.',
+      icon: Icons.point_of_sale_rounded,
+      color: const Color(0xFF1C7ED6),
+      primaryAction: 'Ultimas transacciones',
+      loader: (service) => service.latestSales(),
+    );
+  }
 }

@@ -81,7 +81,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(18),
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: wide ? 920 : 430),
+                    constraints: BoxConstraints(maxWidth: wide ? 920 : 440),
                     child: wide ? _WideLogin(form: _buildForm(context)) : _MobileLogin(form: _buildForm(context)),
                   ),
                 ),
@@ -166,28 +166,15 @@ class _MobileLogin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        SizedBox(
-          height: 650,
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF0A8A78),
-              borderRadius: BorderRadius.circular(34),
-            ),
-            child: const _OrganicHeader(compact: true),
-          ),
-        ),
-        Positioned(
-          left: 14,
-          right: 14,
-          top: 168,
-          child: Card(
-            child: Padding(padding: const EdgeInsets.all(22), child: form),
-          ),
-        ),
-      ],
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 210, child: _OrganicHeader(compact: true)),
+          Padding(padding: const EdgeInsets.fromLTRB(20, 18, 20, 22), child: form),
+        ],
+      ),
     );
   }
 }
@@ -248,7 +235,7 @@ class _OrganicHeader extends StatelessWidget {
               const SizedBox(height: 24),
               Text('EconoSalud', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
               const SizedBox(height: 18),
-              Text('Hello!', style: Theme.of(context).textTheme.displaySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
+              Text('Botica movil', style: Theme.of(context).textTheme.displaySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
               const SizedBox(height: 6),
               const Text('Bienvenido a EconoSalud', style: TextStyle(color: Colors.white70, fontSize: 16)),
               if (!compact) ...[
