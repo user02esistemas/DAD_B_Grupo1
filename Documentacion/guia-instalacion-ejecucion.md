@@ -415,17 +415,17 @@ Si hay conflicto de puertos, usar un Tomcat para API y otro para web, o ejecutar
 
 ## 12. Ejecutar Flutter
 
-`BoticaMobileFlutter` todavia funciona como base para la aplicacion movil.
-
-Cuando ya este creado/configurado con Flutter SDK:
+`BoticaMobileFlutter` ya es un proyecto Flutter con estructura MVVM por feature. Para ejecutarlo:
 
 ```powershell
 Set-Location -LiteralPath "BoticaMobileFlutter"
 flutter pub get
-flutter run
+flutter run --dart-define=API_BASE_URL=http://localhost:8081/BoticaAPIREST
 ```
 
 La app movil debe consumir la API REST, no RMI ni MySQL directamente.
+
+En emulador Android puede usarse la URL por defecto `http://10.0.2.2:8081/BoticaAPIREST`. En celular fisico se debe usar la IP local de la PC donde corre Tomcat.
 
 ## 13. Orden Completo De Ejecucion
 

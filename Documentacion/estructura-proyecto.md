@@ -93,10 +93,33 @@ lib/
 │   └── widgets/
 └── features/
     ├── auth/
+    │   ├── model/
+    │   ├── service/
+    │   ├── view/
+    │   └── viewmodel/
     ├── dashboard/
+    │   ├── model/
+    │   ├── service/
+    │   ├── view/
+    │   └── viewmodel/
+    ├── health/
+    │   ├── model/
+    │   ├── service/
+    │   ├── view/
+    │   └── viewmodel/
     ├── productos/
-    └── ventas/
+    │   ├── model/
+    │   ├── service/
+    │   ├── view/
+    │   └── viewmodel/
+    ├── caja/view/
+    ├── compras/view/
+    ├── reportes/view/
+    ├── usuarios/view/
+    └── ventas/view/
 ```
+
+La app movil usa MVVM por modulo. Las vistas no consumen HTTP directamente; llaman a su `viewmodel`, el `viewmodel` maneja estado y el `service` consume la API REST mediante `core/network/api_client.dart`.
 
 ## Postman
 

@@ -20,10 +20,29 @@ Login JSON + token para solicitudes protegidas
 
 ## Roles Iniciales
 
-```text
-ROLE_ADMIN
-ROLE_FARMACEUTICO
-```
+| Rol | Descripcion | Uso principal |
+|---|---|---|
+| `ROLE_ADMIN` | Administrador del sistema | Gestion completa del sistema, usuarios, reportes, inventario, compras y ventas |
+| `ROLE_FARMACEUTICO` | Farmaceutico | Operacion de atencion, ventas, caja y consulta de productos |
+| `ROLE_ALMACENERO` | Almacenero | Gestion de inventario, compras, stock y vencimientos |
+
+Estos roles vienen de la tabla `roles` y se asignan mediante `usuario_roles`.
+
+## Aplicacion Movil
+
+La app movil debe aplicar la misma regla de negocio que la web:
+
+| Modulo movil | Admin | Farmaceutico | Almacenero |
+|---|---|---|---|
+| Dashboard | Si | Si | Si |
+| Productos | Si | Si | Si |
+| Ventas | Si | Si | No |
+| Compras | Si | No | Si |
+| Caja | Si | Si | No |
+| Reportes | Si | Consulta limitada | Consulta limitada |
+| Usuarios | Si | No | No |
+
+Flutter puede ocultar opciones segun rol, pero la API/RMI debe validar permisos en servidor para evitar acceso no autorizado.
 
 ## Reglas
 
