@@ -14,6 +14,7 @@ La API no debe acceder directamente a la base de datos.
 
 | Modulo | Metodo | Ruta | Descripcion |
 |---|---|---|---|
+| Salud | GET | `/api/health` | Verifica API y servicios RMI publicados |
 | Auth | POST | `/api/auth/login` | Autentica usuario movil |
 | Auth | POST | `/api/auth/logout` | Cierra sesion logica |
 | Productos | GET | `/api/productos` | Lista o busca productos |
@@ -53,6 +54,10 @@ La API no debe acceder directamente a la base de datos.
 Antes de conectar Flutter, cada endpoint debe probarse en Postman y guardarse en `Postman/`.
 
 Endpoints implementados:
+
+```text
+GET {{base_url}}/api/health
+```
 
 ```text
 POST {{base_url}}/api/auth/login

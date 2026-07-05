@@ -5,6 +5,24 @@
   },
   "item": [
     {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Estado API y RMI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "health"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Auth",
       "item": [
         {
