@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../dashboard/view/home_page.dart';
-import '../../health/view/health_status_panel.dart';
+import '../../health/service/health_service.dart';
+import '../../health/viewmodel/health_viewmodel.dart';
 import '../model/user.dart';
 import '../service/auth_service.dart';
 import '../viewmodel/auth_viewmodel.dart';
@@ -19,40 +20,38 @@ class _LoginPageState extends State<LoginPage> {
   final _usernameController = TextEditingController(text: 'admin');
   final _passwordController = TextEditingController(text: 'admin');
   late final AuthViewModel _viewModel;
+  late final HealthViewModel _healthViewModel;
 
   @override
   void initState() {
     super.initState();
     _viewModel = AuthViewModel(AuthService(ApiClient()))..addListener(_onViewModelChanged);
+    _healthViewModel = HealthViewModel(HealthService(ApiClient()))..addListener(_onViewModelChanged);
+    _healthViewModel.check();
   }
 
   @override
   void dispose() {
     _viewModel.removeListener(_onViewModelChanged);
+    _healthViewModel.removeListener(_onViewModelChanged);
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   void _onViewModelChanged() {
-    if (mounted) {
-      setState(() {});
-    }
+    if (mounted) setState(() {});
   }
 
   Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     final user = await _viewModel.login(
       _usernameController.text.trim(),
       _passwordController.text,
     );
 
-    if (!mounted || user == null) {
-      return;
-    }
+    if (!mounted || user == null) return;
     _openHome(user);
   }
 
@@ -73,16 +72,16 @@ class _LoginPageState extends State<LoginPage> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFFB7E9DD), Color(0xFFEFF8F4), Color(0xFFD8F3EA)],
+                colors: [Color(0xFFCDEFE7), Color(0xFFF7FCFA), Color(0xFFDDF5EF)],
               ),
             ),
             child: SafeArea(
               child: Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(18),
+                  padding: EdgeInsets.symmetric(horizontal: wide ? 28 : 22, vertical: 22),
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: wide ? 920 : 440),
-                    child: wide ? _WideLogin(form: _buildForm(context)) : _MobileLogin(form: _buildForm(context)),
+                    constraints: BoxConstraints(maxWidth: wide ? 980 : 430),
+                    child: wide ? _WideLogin(form: _buildForm(context), status: _status) : _MobileLogin(form: _buildForm(context), status: _status),
                   ),
                 ),
               ),
@@ -93,6 +92,13 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  _LoginStatus get _status {
+    if (_healthViewModel.loading && _healthViewModel.status == null) return const _LoginStatus('Verificando servicio', Icons.sync_rounded, Color(0xFF58716B));
+    if (_healthViewModel.status?.isHealthy == true) return const _LoginStatus('Sistema disponible', Icons.verified_rounded, Color(0xFF0A8A78));
+    if (_healthViewModel.failed || _healthViewModel.status != null) return const _LoginStatus('Servicio no disponible', Icons.warning_amber_rounded, Color(0xFFE67700));
+    return const _LoginStatus('Listo para ingresar', Icons.lock_open_rounded, Color(0xFF0A8A78));
+  }
+
   Widget _buildForm(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Form(
@@ -100,58 +106,39 @@ class _LoginPageState extends State<LoginPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Login', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900, color: colorScheme.primary)),
-          const SizedBox(height: 14),
-          const HealthStatusPanel(),
-          const SizedBox(height: 18),
+          Text('Iniciar sesion', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900, color: const Color(0xFF087B68))),
+          const SizedBox(height: 5),
+          Text('Ingrese sus credenciales para continuar.', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54)),
+          const SizedBox(height: 22),
           TextFormField(
             controller: _usernameController,
-            decoration: const InputDecoration(prefixIcon: Icon(Icons.person_outline), labelText: 'Usuario'),
+            decoration: const InputDecoration(prefixIcon: Icon(Icons.person_outline_rounded), labelText: 'Usuario'),
             validator: (value) => value == null || value.trim().isEmpty ? 'Ingrese usuario' : null,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           TextFormField(
             controller: _passwordController,
             obscureText: true,
-            decoration: const InputDecoration(prefixIcon: Icon(Icons.lock_outline), labelText: 'Clave'),
+            decoration: const InputDecoration(prefixIcon: Icon(Icons.lock_outline_rounded), labelText: 'Clave'),
             validator: (value) => value == null || value.isEmpty ? 'Ingrese clave' : null,
           ),
+          const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(onPressed: () {}, child: const Text('Recordar clave')),
           ),
           if (_viewModel.error != null) ...[
-            Text(_viewModel.error!, style: TextStyle(color: colorScheme.error)),
-            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: colorScheme.error.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(14)),
+              child: Text(_viewModel.error!, style: TextStyle(color: colorScheme.error, fontWeight: FontWeight.w700)),
+            ),
+            const SizedBox(height: 12),
           ],
           FilledButton.icon(
             onPressed: _viewModel.loading ? null : _login,
-            icon: _viewModel.loading
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.arrow_forward_rounded),
+            icon: _viewModel.loading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.arrow_forward_rounded),
             label: const Text('Ingresar'),
-          ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              const Expanded(child: Divider()),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text('API REST + RMI', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.black45)),
-              ),
-              const Expanded(child: Divider()),
-            ],
-          ),
-          const SizedBox(height: 14),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _MiniBadge(icon: Icons.storage_rounded, label: 'MySQL'),
-              SizedBox(width: 8),
-              _MiniBadge(icon: Icons.api_rounded, label: 'API'),
-              SizedBox(width: 8),
-              _MiniBadge(icon: Icons.hub_rounded, label: 'RMI'),
-            ],
           ),
         ],
       ),
@@ -160,41 +147,27 @@ class _LoginPageState extends State<LoginPage> {
 }
 
 class _MobileLogin extends StatelessWidget {
-  const _MobileLogin({required this.form});
+  const _MobileLogin({required this.form, required this.status});
 
   final Widget form;
+  final _LoginStatus status;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 210, child: _OrganicHeader(compact: true)),
-          Padding(padding: const EdgeInsets.fromLTRB(20, 18, 20, 22), child: form),
-        ],
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [BoxShadow(color: const Color(0xFF087B68).withValues(alpha: 0.10), blurRadius: 32, offset: const Offset(0, 18))],
       ),
-    );
-  }
-}
-
-class _WideLogin extends StatelessWidget {
-  const _WideLogin({required this.form});
-
-  final Widget form;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: SizedBox(
-        height: 620,
-        child: Row(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Expanded(child: _OrganicHeader(compact: false)),
-            Expanded(
-              child: Padding(padding: const EdgeInsets.all(34), child: form),
-            ),
+            SizedBox(height: 250, child: _BrandPanel(compact: true, status: status)),
+            const SizedBox(height: 22),
+            form,
           ],
         ),
       ),
@@ -202,50 +175,101 @@ class _WideLogin extends StatelessWidget {
   }
 }
 
-class _OrganicHeader extends StatelessWidget {
-  const _OrganicHeader({required this.compact});
+class _WideLogin extends StatelessWidget {
+  const _WideLogin({required this.form, required this.status});
+
+  final Widget form;
+  final _LoginStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 620,
+            padding: const EdgeInsets.all(34),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.42),
+              borderRadius: BorderRadius.circular(34),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 28, offset: const Offset(0, 14))],
+            ),
+            child: _BrandPanel(compact: false, status: status),
+          ),
+        ),
+        const SizedBox(width: 28),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(34),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(34)),
+            child: form,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BrandPanel extends StatelessWidget {
+  const _BrandPanel({required this.compact, required this.status});
 
   final bool compact;
+  final _LoginStatus status;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(compact ? 24 : 34),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(compact ? 34 : 28),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF087B68), Color(0xFF16B89C)],
-        ),
+        borderRadius: BorderRadius.circular(compact ? 28 : 32),
+        gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF087B68), Color(0xFF18BFA3)]),
       ),
       child: Stack(
         children: [
-          Positioned(right: -30, top: -20, child: _Blob(size: compact ? 120 : 170, color: Colors.white24)),
-          Positioned(left: -34, bottom: -26, child: _Blob(size: compact ? 110 : 150, color: Colors.white12)),
+          Positioned(right: -26, top: -24, child: _Blob(size: compact ? 124 : 180, color: Colors.white.withValues(alpha: 0.22))),
+          Positioned(left: -38, bottom: -34, child: _Blob(size: compact ? 128 : 190, color: Colors.white.withValues(alpha: 0.08))),
+          Positioned(right: compact ? 12 : 20, bottom: compact ? 8 : 18, child: _PulseBadge(status: status)),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 60,
-                height: 60,
+                width: compact ? 58 : 72,
+                height: compact ? 58 : 72,
                 decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(20)),
-                child: const Icon(Icons.local_pharmacy_rounded, color: Colors.white, size: 34),
+                child: Icon(Icons.local_pharmacy_rounded, color: Colors.white, size: compact ? 32 : 40),
               ),
-              const SizedBox(height: 24),
-              Text('EconoSalud', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 18),
-              Text('Botica movil', style: Theme.of(context).textTheme.displaySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 6),
-              const Text('Bienvenido a EconoSalud', style: TextStyle(color: Colors.white70, fontSize: 16)),
+              const Spacer(),
+              Text('EconoSalud', style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 8),
+              Text('Botica movil', style: Theme.of(context).textTheme.displaySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w900, height: 0.98)),
               if (!compact) ...[
-                const Spacer(),
-                const _FeatureLine(icon: Icons.verified_rounded, text: 'Control de inventario y vencimientos'),
-                const _FeatureLine(icon: Icons.point_of_sale_rounded, text: 'Ventas y compras distribuidas'),
-                const _FeatureLine(icon: Icons.insights_rounded, text: 'Indicadores operativos en tiempo real'),
+                const SizedBox(height: 12),
+                const Text('Gestion rapida para ventas, inventario y reportes.', style: TextStyle(color: Colors.white70, fontSize: 16)),
               ],
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PulseBadge extends StatelessWidget {
+  const _PulseBadge({required this.status});
+
+  final _LoginStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(999)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(status.icon, color: Colors.white, size: 16),
+          const SizedBox(width: 6),
+          Text(status.label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12)),
         ],
       ),
     );
@@ -264,45 +288,9 @@ class _Blob extends StatelessWidget {
   }
 }
 
-class _FeatureLine extends StatelessWidget {
-  const _FeatureLine({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.white, size: 20),
-          const SizedBox(width: 10),
-          Expanded(child: Text(text, style: const TextStyle(color: Colors.white))),
-        ],
-      ),
-    );
-  }
-}
-
-class _MiniBadge extends StatelessWidget {
-  const _MiniBadge({required this.icon, required this.label});
-
-  final IconData icon;
+class _LoginStatus {
+  const _LoginStatus(this.label, this.icon, this.color);
   final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(color: const Color(0xFFE7F6EF), borderRadius: BorderRadius.circular(12)),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 5),
-          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w800, fontSize: 12)),
-        ],
-      ),
-    );
-  }
+  final IconData icon;
+  final Color color;
 }
