@@ -8,7 +8,7 @@ Flujo de comunicacion esperado:
 Flutter -> BoticaAPIREST -> BoticaRMIInterface -> BoticaRMIServidor -> MySQL
 ```
 
-Estructura inicial:
+Estructura MVVM por feature:
 
 ```text
 lib/
@@ -20,26 +20,37 @@ lib/
 │   └── widgets/
 └── features/
     ├── auth/
+    │   ├── model/
+    │   ├── service/
+    │   ├── view/
+    │   └── viewmodel/
     ├── dashboard/
-    ├── productos/
-    └── ventas/
+    │   ├── model/
+    │   ├── service/
+    │   ├── view/
+    │   └── viewmodel/
+    ├── health/
+    │   ├── model/
+    │   ├── service/
+    │   ├── view/
+    │   └── viewmodel/
+    └── productos/
+        ├── model/
+        ├── service/
+        ├── view/
+        └── viewmodel/
 ```
 
 ## Capas internas
 
 ```text
-core/config       URL base y configuracion general.
-core/network      Cliente HTTP que consume respuestas ApiResponse.
-core/widgets      Widgets compartidos.
-features/auth     Login y modelo de usuario.
-features/caja     Pendiente: apertura/cierre de caja y sesiones.
-features/compras  Pendiente: registro y consulta de compras.
-features/dashboard Indicadores principales.
-features/health   Verificacion API/RMI usando /api/health.
-features/productos Busqueda y listado de productos.
-features/reportes Pendiente: reportes operativos.
-features/usuarios Pendiente: administracion de usuarios segun permisos.
-features/ventas   Pendiente: registro y consulta de ventas.
+core/config             URL base y configuracion general.
+core/network            Cliente HTTP que consume respuestas ApiResponse.
+core/widgets            Widgets compartidos.
+features/*/model        Entidades y parseo JSON.
+features/*/service      Consumo REST usando core/network/api_client.dart.
+features/*/viewmodel    Estado de pantalla, carga, error y acciones.
+features/*/view         Pantallas y widgets propios del modulo.
 ```
 
 Regla: la app movil solo consume endpoints JSON de `BoticaAPIREST`. No debe conectarse directo a RMI ni a MySQL.

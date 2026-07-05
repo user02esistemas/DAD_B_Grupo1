@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'features/auth/login_page.dart';
+import 'features/auth/view/login_page.dart';
 
 class EconoSaludApp extends StatelessWidget {
   const EconoSaludApp({super.key});

@@ -1,5 +1,5 @@
-import '../../core/network/api_client.dart';
-import 'dashboard_summary.dart';
+import '../../../core/network/api_client.dart';
+import '../model/dashboard_summary.dart';
 
 class DashboardService {
   DashboardService(this._apiClient);

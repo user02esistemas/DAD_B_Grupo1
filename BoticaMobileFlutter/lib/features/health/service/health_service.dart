@@ -1,5 +1,5 @@
-import '../../core/network/api_client.dart';
-import 'health_status.dart';
+import '../../../core/network/api_client.dart';
+import '../model/health_status.dart';
 
 class HealthService {
   HealthService(this._apiClient);

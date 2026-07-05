@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../core/network/api_client.dart';
-import '../dashboard/home_page.dart';
-import '../health/health_status_panel.dart';
-import 'auth_service.dart';
-import 'user.dart';
+import '../../../core/network/api_client.dart';
+import '../../dashboard/view/home_page.dart';
+import '../../health/view/health_status_panel.dart';
+import '../model/user.dart';
+import '../service/auth_service.dart';
+import '../viewmodel/auth_viewmodel.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,16 +18,26 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController(text: 'admin');
   final _passwordController = TextEditingController(text: 'admin');
-  final _authService = AuthService(ApiClient());
+  late final AuthViewModel _viewModel;
 
-  bool _loading = false;
-  String? _error;
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = AuthViewModel(AuthService(ApiClient()))..addListener(_onViewModelChanged);
+  }
 
   @override
   void dispose() {
+    _viewModel.removeListener(_onViewModelChanged);
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _onViewModelChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _login() async {
@@ -34,28 +45,15 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    final user = await _viewModel.login(
+      _usernameController.text.trim(),
+      _passwordController.text,
+    );
 
-    try {
-      final user = await _authService.login(
-        _usernameController.text.trim(),
-        _passwordController.text,
-      );
-
-      if (!mounted) {
-        return;
-      }
-      _openHome(user);
-    } catch (ex) {
-      setState(() => _error = ex.toString().replaceFirst('Exception: ', ''));
-    } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+    if (!mounted || user == null) {
+      return;
     }
+    _openHome(user);
   }
 
   void _openHome(User user) {
@@ -110,14 +108,14 @@ class _LoginPageState extends State<LoginPage> {
                       decoration: const InputDecoration(labelText: 'Clave'),
                       validator: (value) => value == null || value.isEmpty ? 'Ingrese clave' : null,
                     ),
-                    if (_error != null) ...[
+                    if (_viewModel.error != null) ...[
                       const SizedBox(height: 14),
-                      Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                      Text(_viewModel.error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
                     ],
                     const SizedBox(height: 20),
                     FilledButton(
-                      onPressed: _loading ? null : _login,
-                      child: _loading
+                      onPressed: _viewModel.loading ? null : _login,
+                      child: _viewModel.loading
                           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                           : const Text('Ingresar'),
                     ),

@@ -1,4 +1,4 @@
-import '../../core/widgets/module_placeholder_page.dart';
+import '../../../core/widgets/module_placeholder_page.dart';
 
 class UsuariosPage extends ModulePlaceholderPage {
   const UsuariosPage({super.key})
