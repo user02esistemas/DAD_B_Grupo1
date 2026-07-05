@@ -421,11 +421,14 @@ Cuando ya este creado/configurado con Flutter SDK:
 
 ```powershell
 Set-Location -LiteralPath "BoticaMobileFlutter"
+flutter create .
 flutter pub get
 flutter run
 ```
 
 La app movil debe consumir la API REST, no RMI ni MySQL directamente.
+
+`flutter create .` se usa solo la primera vez para generar carpetas de plataforma como `android/`, `ios/` o `windows/`.
 
 ## 13. Orden Completo De Ejecucion
 
