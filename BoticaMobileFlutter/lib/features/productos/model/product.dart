@@ -24,8 +24,8 @@ class Product {
         ? json['catalogoProducto'] as Map<String, dynamic>
         : <String, dynamic>{};
     final nombre = [
-      catalogo['nombreComercial']?.toString(),
-      catalogo['concentracion']?.toString(),
+      (catalogo['nombreComercial'] ?? json['nombreComercial'])?.toString(),
+      (catalogo['concentracion'] ?? json['concentracion'])?.toString(),
     ].where((part) => part != null && part.isNotEmpty).join(' ');
 
     return Product(

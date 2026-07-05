@@ -51,16 +51,20 @@ class _ProductsPageState extends State<ProductsPage> {
 
   Widget _buildBody() {
     if (_viewModel.loading && _viewModel.products.isEmpty) return const Center(child: CircularProgressIndicator());
-    if (_viewModel.error != null && _viewModel.products.isEmpty) return ErrorPanel(message: _viewModel.error!, onRetry: _reload);
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 90),
-      itemCount: _viewModel.products.length + 1,
+      itemCount: _viewModel.products.length + 2,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (_, index) {
         if (index == 0) {
           return _InventoryHeader(controller: _searchController, loading: _viewModel.loading, onSearch: _reload, products: _viewModel.products);
         }
-        return _ProductCard(product: _viewModel.products[index - 1]);
+        if (index == 1) {
+          if (_viewModel.error != null) return ErrorPanel(message: _viewModel.error!, onRetry: _reload);
+          if (_viewModel.products.isEmpty) return const _EmptyProductsCard();
+          return const SizedBox.shrink();
+        }
+        return _ProductCard(product: _viewModel.products[index - 2]);
       },
     );
   }
@@ -96,11 +100,21 @@ class _InventoryHeader extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Row(children: [Expanded(child: TextField(controller: controller, decoration: const InputDecoration(prefixIcon: Icon(Icons.search_rounded), labelText: 'Buscar medicamento'), onSubmitted: (_) => onSearch())), const SizedBox(width: 10), FilledButton(onPressed: loading ? null : onSearch, child: const Text('Buscar'))]),
-          if (products.isEmpty && !loading) ...[
-            const SizedBox(height: 14),
-            const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('No hay productos para el filtro actual.'))),
-          ],
         ],
+      ),
+    );
+  }
+}
+
+class _EmptyProductsCard extends StatelessWidget {
+  const _EmptyProductsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Card(
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Text('No hay productos para mostrar. Pruebe buscando por nombre, principio activo o lote.'),
       ),
     );
   }

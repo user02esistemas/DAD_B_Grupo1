@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/widgets/error_panel.dart';
 import '../../auth/model/user.dart';
+import '../../auth/service/auth_service.dart';
+import '../../auth/view/login_page.dart';
 import '../../caja/view/caja_page.dart';
 import '../../compras/view/compras_page.dart';
 import '../../productos/view/products_page.dart';
@@ -363,12 +365,24 @@ class _AppDrawer extends StatelessWidget {
               _DrawerItem(icon: Icons.dashboard_rounded, label: 'Dashboard', onTap: () => Navigator.of(context).maybePop()),
               for (final module in _modulesFor(user)) _DrawerItem(icon: module.icon, label: module.title, onTap: () => _openModule(context, module.page)),
               const Spacer(),
-              _DrawerItem(icon: Icons.logout_rounded, label: 'Salir', onTap: () => Navigator.of(context).popUntil((route) => route.isFirst)),
+              _DrawerItem(icon: Icons.logout_rounded, label: 'Salir', onTap: () => _logout(context)),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _logout(BuildContext context) async {
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    navigator.pop();
+    try {
+      await AuthService(ApiClient()).logout(user.username);
+    } catch (ex) {
+      messenger.showSnackBar(const SnackBar(content: Text('No se pudo cerrar sesion en el servidor. Se cerrara localmente.')));
+    }
+    navigator.pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const LoginPage()), (route) => false);
   }
 }
 
