@@ -83,6 +83,12 @@ Documentacion/permisos-db.md
 7. Ejecutar BoticaMobileFlutter.
 ```
 
+Verificacion rapida de API y RMI:
+
+```text
+GET http://localhost:8081/BoticaAPIREST/api/health
+```
+
 ## Versiones Recomendadas
 
 ```text
