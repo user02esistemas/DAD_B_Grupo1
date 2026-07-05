@@ -33,6 +33,7 @@ core/network      Cliente HTTP que consume respuestas ApiResponse.
 core/widgets      Widgets compartidos.
 features/auth     Login y modelo de usuario.
 features/dashboard Indicadores principales.
+features/health   Verificacion API/RMI usando /api/health.
 features/productos Busqueda y listado de productos.
 ```
 
@@ -42,6 +43,7 @@ Regla: la app movil solo consume endpoints JSON de `BoticaAPIREST`. No debe cone
 
 ```text
 Login con /api/auth/login
+Estado API/RMI con /api/health
 Dashboard con /api/dashboard/resumen
 Busqueda de productos con /api/productos
 ```

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/network/api_client.dart';
 import '../dashboard/home_page.dart';
+import '../health/health_status_panel.dart';
 import 'auth_service.dart';
 import 'user.dart';
 
@@ -94,7 +95,9 @@ class _LoginPageState extends State<LoginPage> {
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 18),
+                    const HealthStatusPanel(),
+                    const SizedBox(height: 18),
                     TextFormField(
                       controller: _usernameController,
                       decoration: const InputDecoration(labelText: 'Usuario'),
