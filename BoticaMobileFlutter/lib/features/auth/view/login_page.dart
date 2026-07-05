@@ -93,10 +93,10 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   _LoginStatus get _status {
-    if (_healthViewModel.loading && _healthViewModel.status == null) return const _LoginStatus('Verificando servicio', Icons.sync_rounded, Color(0xFF58716B));
-    if (_healthViewModel.status?.isHealthy == true) return const _LoginStatus('Sistema disponible', Icons.verified_rounded, Color(0xFF0A8A78));
-    if (_healthViewModel.failed || _healthViewModel.status != null) return const _LoginStatus('Servicio no disponible', Icons.warning_amber_rounded, Color(0xFFE67700));
-    return const _LoginStatus('Listo para ingresar', Icons.lock_open_rounded, Color(0xFF0A8A78));
+    if (_healthViewModel.loading && _healthViewModel.status == null) return const _LoginStatus('Revisando', Icons.sync_rounded, Color(0xFF58716B));
+    if (_healthViewModel.status?.isHealthy == true) return const _LoginStatus('Disponible', Icons.verified_rounded, Color(0xFF0A8A78));
+    if (_healthViewModel.failed || _healthViewModel.status != null) return const _LoginStatus('Sin conexion', Icons.warning_amber_rounded, Color(0xFFE67700));
+    return const _LoginStatus('Listo', Icons.lock_open_rounded, Color(0xFF0A8A78));
   }
 
   Widget _buildForm(BuildContext context) {
@@ -165,8 +165,8 @@ class _MobileLogin extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(height: 250, child: _BrandPanel(compact: true, status: status)),
-            const SizedBox(height: 22),
+            SizedBox(height: 214, child: _BrandPanel(compact: true, status: status)),
+            const SizedBox(height: 20),
             form,
           ],
         ),
@@ -219,36 +219,45 @@ class _BrandPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(compact ? 24 : 34),
+      padding: EdgeInsets.all(compact ? 22 : 34),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(compact ? 28 : 32),
         gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF087B68), Color(0xFF18BFA3)]),
       ),
-      child: Stack(
-        children: [
-          Positioned(right: -26, top: -24, child: _Blob(size: compact ? 124 : 180, color: Colors.white.withValues(alpha: 0.22))),
-          Positioned(left: -38, bottom: -34, child: _Blob(size: compact ? 128 : 190, color: Colors.white.withValues(alpha: 0.08))),
-          Positioned(right: compact ? 12 : 20, bottom: compact ? 8 : 18, child: _PulseBadge(status: status)),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: compact ? 58 : 72,
-                height: compact ? 58 : 72,
-                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(20)),
-                child: Icon(Icons.local_pharmacy_rounded, color: Colors.white, size: compact ? 32 : 40),
-              ),
-              const Spacer(),
-              Text('EconoSalud', style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 8),
-              Text('Botica movil', style: Theme.of(context).textTheme.displaySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w900, height: 0.98)),
-              if (!compact) ...[
-                const SizedBox(height: 12),
-                const Text('Gestion rapida para ventas, inventario y reportes.', style: TextStyle(color: Colors.white70, fontSize: 16)),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(compact ? 28 : 32),
+        child: Stack(
+          children: [
+            Positioned(right: -34, top: -30, child: _Blob(size: compact ? 126 : 180, color: Colors.white.withValues(alpha: 0.22))),
+            Positioned(left: -42, bottom: -44, child: _Blob(size: compact ? 128 : 190, color: Colors.white.withValues(alpha: 0.08))),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: compact ? 56 : 72,
+                      height: compact ? 56 : 72,
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(20)),
+                      child: Icon(Icons.local_pharmacy_rounded, color: Colors.white, size: compact ? 31 : 40),
+                    ),
+                    const Spacer(),
+                    Flexible(child: _PulseBadge(status: status)),
+                  ],
+                ),
+                const Spacer(),
+                Text('EconoSalud', maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 6),
+                Text('Botica movil', maxLines: 1, overflow: TextOverflow.visible, style: Theme.of(context).textTheme.headlineLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w900, height: 1.0, fontSize: compact ? 34 : null)),
+                if (!compact) ...[
+                  const SizedBox(height: 12),
+                  const Text('Gestion rapida para ventas, inventario y reportes.', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                ],
               ],
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -262,14 +271,14 @@ class _PulseBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(999)),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(color: status.color.withValues(alpha: 0.20), borderRadius: BorderRadius.circular(999), border: Border.all(color: Colors.white.withValues(alpha: 0.18))),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(status.icon, color: Colors.white, size: 16),
           const SizedBox(width: 6),
-          Text(status.label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12)),
+          Flexible(child: Text(status.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11))),
         ],
       ),
     );

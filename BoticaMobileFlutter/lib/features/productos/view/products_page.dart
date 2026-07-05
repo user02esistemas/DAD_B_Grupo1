@@ -45,12 +45,11 @@ class _ProductsPageState extends State<ProductsPage> {
         title: const Text('Productos'),
       ),
       floatingActionButton: FloatingActionButton.extended(onPressed: _reload, icon: const Icon(Icons.refresh_rounded), label: const Text('Actualizar')),
-      body: _buildBody(),
+      body: RefreshIndicator(onRefresh: () => _viewModel.search(term: _searchController.text.trim(), limit: 20), child: _buildBody()),
     );
   }
 
   Widget _buildBody() {
-    if (_viewModel.loading && _viewModel.products.isEmpty) return const Center(child: CircularProgressIndicator());
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 90),
       itemCount: _viewModel.products.length + 2,
@@ -60,6 +59,7 @@ class _ProductsPageState extends State<ProductsPage> {
           return _InventoryHeader(controller: _searchController, loading: _viewModel.loading, onSearch: _reload, products: _viewModel.products);
         }
         if (index == 1) {
+          if (_viewModel.loading) return const _LoadingProductsCard();
           if (_viewModel.error != null) return ErrorPanel(message: _viewModel.error!, onRetry: _reload);
           if (_viewModel.products.isEmpty) return const _EmptyProductsCard();
           return const SizedBox.shrink();
@@ -111,10 +111,43 @@ class _EmptyProductsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          children: [
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(color: const Color(0xFF087B68).withValues(alpha: 0.10), borderRadius: BorderRadius.circular(20)),
+              child: const Icon(Icons.search_off_rounded, color: Color(0xFF087B68), size: 30),
+            ),
+            const SizedBox(height: 12),
+            Text('Sin productos para mostrar', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+            const SizedBox(height: 4),
+            const Text('Busque por nombre, principio activo o lote.', textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LoadingProductsCard extends StatelessWidget {
+  const _LoadingProductsCard();
+
+  @override
+  Widget build(BuildContext context) {
     return const Card(
       child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Text('No hay productos para mostrar. Pruebe buscando por nombre, principio activo o lote.'),
+        padding: EdgeInsets.all(18),
+        child: Row(
+          children: [
+            SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4)),
+            SizedBox(width: 14),
+            Expanded(child: Text('Cargando inventario...')),
+          ],
+        ),
       ),
     );
   }
