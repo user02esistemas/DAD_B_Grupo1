@@ -25,8 +25,10 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    _viewModel = AuthViewModel(AuthService(ApiClient()))..addListener(_onViewModelChanged);
-    _healthViewModel = HealthViewModel(HealthService(ApiClient()))..addListener(_onViewModelChanged);
+    _viewModel = AuthViewModel(AuthService(ApiClient()))
+      ..addListener(_onViewModelChanged);
+    _healthViewModel = HealthViewModel(HealthService(ApiClient()))
+      ..addListener(_onViewModelChanged);
     _healthViewModel.check();
   }
 
@@ -72,16 +74,24 @@ class _LoginPageState extends State<LoginPage> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFFCDEFE7), Color(0xFFF7FCFA), Color(0xFFDDF5EF)],
+                colors: [
+                  Color(0xFFFFE3DD),
+                  Color(0xFFFFFBFA),
+                  Color(0xFFFFF0EC)
+                ],
               ),
             ),
             child: SafeArea(
               child: Center(
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(horizontal: wide ? 28 : 22, vertical: 22),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: wide ? 28 : 22, vertical: 22),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: wide ? 980 : 430),
-                    child: wide ? _WideLogin(form: _buildForm(context), status: _status) : _MobileLogin(form: _buildForm(context), status: _status),
+                    child: wide
+                        ? _WideLogin(form: _buildForm(context), status: _status)
+                        : _MobileLogin(
+                            form: _buildForm(context), status: _status),
                   ),
                 ),
               ),
@@ -93,10 +103,20 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   _LoginStatus get _status {
-    if (_healthViewModel.loading && _healthViewModel.status == null) return const _LoginStatus('Revisando', Icons.sync_rounded, Color(0xFF58716B));
-    if (_healthViewModel.status?.isHealthy == true) return const _LoginStatus('Disponible', Icons.verified_rounded, Color(0xFF0A8A78));
-    if (_healthViewModel.failed || _healthViewModel.status != null) return const _LoginStatus('Sin conexion', Icons.warning_amber_rounded, Color(0xFFE67700));
-    return const _LoginStatus('Listo', Icons.lock_open_rounded, Color(0xFF0A8A78));
+    if (_healthViewModel.loading && _healthViewModel.status == null) {
+      return const _LoginStatus(
+          'Revisando', Icons.sync_rounded, Color(0xFF58716B));
+    }
+    if (_healthViewModel.status?.isHealthy == true) {
+      return const _LoginStatus(
+          'Disponible', Icons.verified_rounded, Color(0xFF0A8A78));
+    }
+    if (_healthViewModel.failed || _healthViewModel.status != null) {
+      return const _LoginStatus(
+          'Sin conexion', Icons.warning_amber_rounded, Color(0xFFE67700));
+    }
+    return const _LoginStatus(
+        'Listo', Icons.lock_open_rounded, Color(0xFF0A8A78));
   }
 
   Widget _buildForm(BuildContext context) {
@@ -106,38 +126,61 @@ class _LoginPageState extends State<LoginPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Iniciar sesion', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900, color: const Color(0xFF087B68))),
+          Text('Iniciar sesion',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w900, color: const Color(0xFFD81E0C))),
           const SizedBox(height: 5),
-          Text('Ingrese sus credenciales para continuar.', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54)),
+          Text('Ingrese sus credenciales para continuar.',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: Colors.black54)),
           const SizedBox(height: 22),
           TextFormField(
             controller: _usernameController,
-            decoration: const InputDecoration(prefixIcon: Icon(Icons.person_outline_rounded), labelText: 'Usuario'),
-            validator: (value) => value == null || value.trim().isEmpty ? 'Ingrese usuario' : null,
+            decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.person_outline_rounded),
+                labelText: 'Usuario'),
+            validator: (value) => value == null || value.trim().isEmpty
+                ? 'Ingrese usuario'
+                : null,
           ),
           const SizedBox(height: 14),
           TextFormField(
             controller: _passwordController,
             obscureText: true,
-            decoration: const InputDecoration(prefixIcon: Icon(Icons.lock_outline_rounded), labelText: 'Clave'),
-            validator: (value) => value == null || value.isEmpty ? 'Ingrese clave' : null,
+            decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.lock_outline_rounded),
+                labelText: 'Clave'),
+            validator: (value) =>
+                value == null || value.isEmpty ? 'Ingrese clave' : null,
           ),
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
-            child: TextButton(onPressed: () {}, child: const Text('Recordar clave')),
+            child: TextButton(
+                onPressed: () {}, child: const Text('Recordar clave')),
           ),
           if (_viewModel.error != null) ...[
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: colorScheme.error.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(14)),
-              child: Text(_viewModel.error!, style: TextStyle(color: colorScheme.error, fontWeight: FontWeight.w700)),
+              decoration: BoxDecoration(
+                  color: colorScheme.error.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(14)),
+              child: Text(_viewModel.error!,
+                  style: TextStyle(
+                      color: colorScheme.error, fontWeight: FontWeight.w700)),
             ),
             const SizedBox(height: 12),
           ],
           FilledButton.icon(
             onPressed: _viewModel.loading ? null : _login,
-            icon: _viewModel.loading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.arrow_forward_rounded),
+            icon: _viewModel.loading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.arrow_forward_rounded),
             label: const Text('Ingresar'),
           ),
         ],
@@ -158,14 +201,20 @@ class _MobileLogin extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(30),
-        boxShadow: [BoxShadow(color: const Color(0xFF087B68).withValues(alpha: 0.10), blurRadius: 32, offset: const Offset(0, 18))],
+        boxShadow: [
+          BoxShadow(
+              color: const Color(0xFFE42313).withValues(alpha: 0.10),
+              blurRadius: 32,
+              offset: const Offset(0, 18))
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(height: 214, child: _BrandPanel(compact: true, status: status)),
+            SizedBox(
+                height: 198, child: _BrandPanel(compact: true, status: status)),
             const SizedBox(height: 20),
             form,
           ],
@@ -192,7 +241,12 @@ class _WideLogin extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.42),
               borderRadius: BorderRadius.circular(34),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 28, offset: const Offset(0, 14))],
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 28,
+                    offset: const Offset(0, 14))
+              ],
             ),
             child: _BrandPanel(compact: false, status: status),
           ),
@@ -201,7 +255,8 @@ class _WideLogin extends StatelessWidget {
         Expanded(
           child: Container(
             padding: const EdgeInsets.all(34),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(34)),
+            decoration: BoxDecoration(
+                color: Colors.white, borderRadius: BorderRadius.circular(34)),
             child: form,
           ),
         ),
@@ -222,37 +277,58 @@ class _BrandPanel extends StatelessWidget {
       padding: EdgeInsets.all(compact ? 22 : 34),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(compact ? 28 : 32),
-        gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF087B68), Color(0xFF18BFA3)]),
+        gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFE42313), Color(0xFFFF6B47)]),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(compact ? 28 : 32),
         child: Stack(
           children: [
-            Positioned(right: -34, top: -30, child: _Blob(size: compact ? 126 : 180, color: Colors.white.withValues(alpha: 0.22))),
-            Positioned(left: -42, bottom: -44, child: _Blob(size: compact ? 128 : 190, color: Colors.white.withValues(alpha: 0.08))),
+            Positioned(
+                right: -34,
+                top: -30,
+                child: _Blob(
+                    size: compact ? 126 : 180,
+                    color: Colors.white.withValues(alpha: 0.22))),
+            Positioned(
+                left: -42,
+                bottom: -44,
+                child: _Blob(
+                    size: compact ? 128 : 190,
+                    color: Colors.white.withValues(alpha: 0.08))),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: compact ? 56 : 72,
-                      height: compact ? 56 : 72,
-                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(20)),
-                      child: Icon(Icons.local_pharmacy_rounded, color: Colors.white, size: compact ? 31 : 40),
-                    ),
+                    _BrandMark(size: compact ? 56 : 76),
                     const Spacer(),
                     Flexible(child: _PulseBadge(status: status)),
                   ],
                 ),
                 const Spacer(),
-                Text('EconoSalud', maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
-                const SizedBox(height: 6),
-                Text('Botica movil', maxLines: 1, overflow: TextOverflow.visible, style: Theme.of(context).textTheme.headlineLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w900, height: 1.0, fontSize: compact ? 34 : null)),
+                Text('EconoSalud',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: Colors.white, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 4),
+                Text('Botica movil',
+                    maxLines: 1,
+                    overflow: TextOverflow.visible,
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        height: 1.0,
+                        fontSize: compact ? 30 : null)),
                 if (!compact) ...[
                   const SizedBox(height: 12),
-                  const Text('Gestion rapida para ventas, inventario y reportes.', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                  const Text(
+                      'Gestion rapida para ventas, inventario y reportes.',
+                      style: TextStyle(color: Colors.white70, fontSize: 16)),
                 ],
               ],
             ),
@@ -272,14 +348,46 @@ class _PulseBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(color: status.color.withValues(alpha: 0.20), borderRadius: BorderRadius.circular(999), border: Border.all(color: Colors.white.withValues(alpha: 0.18))),
+      decoration: BoxDecoration(
+          color: status.color.withValues(alpha: 0.20),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.18))),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(status.icon, color: Colors.white, size: 16),
           const SizedBox(width: 6),
-          Flexible(child: Text(status.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11))),
+          Flexible(
+              child: Text(status.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11))),
         ],
+      ),
+    );
+  }
+}
+
+class _BrandMark extends StatelessWidget {
+  const _BrandMark({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+          color: Colors.white, borderRadius: BorderRadius.circular(20)),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: Image.asset('assets/images/econo_salud_symbol.jpg',
+            fit: BoxFit.cover),
       ),
     );
   }
@@ -293,7 +401,10 @@ class _Blob extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(width: size, height: size, decoration: BoxDecoration(color: color, shape: BoxShape.circle));
+    return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle));
   }
 }
 

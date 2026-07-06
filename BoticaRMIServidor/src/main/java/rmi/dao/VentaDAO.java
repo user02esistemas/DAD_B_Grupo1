@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import rmi.config.DatabaseConfig;
 import rmi.dto.DetalleTransaccionDTO;
+import rmi.dto.SesionCajaDTO;
 import rmi.dto.TransaccionDTO;
 
 public class VentaDAO {
@@ -92,6 +93,127 @@ public class VentaDAO {
             return generarNumeroVenta(con);
         } catch (SQLException ex) {
             throw new IllegalStateException("Error al generar numero de venta", ex);
+        }
+    }
+
+    public Long abrirSesionCaja(SesionCajaDTO sesion) {
+        if (sesion.getUsuarioId() == null) {
+            throw new IllegalArgumentException("Usuario requerido para abrir caja");
+        }
+        if (tieneSesionAbierta(sesion.getUsuarioId())) {
+            throw new IllegalArgumentException("Ya tienes una caja abierta");
+        }
+        String sql = "INSERT INTO sesiones_caja (caja_id, usuario_id, monto_inicial, estado) VALUES (?, ?, ?, 'ABIERTA')";
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setLong(1, sesion.getCajaId() == null ? 1L : sesion.getCajaId());
+            ps.setLong(2, sesion.getUsuarioId());
+            ps.setBigDecimal(3, sesion.getMontoInicial() == null ? BigDecimal.ZERO : sesion.getMontoInicial());
+            ps.executeUpdate();
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al abrir caja", ex);
+        }
+        throw new IllegalStateException("No se pudo abrir caja");
+    }
+
+    public boolean cerrarSesionCaja(SesionCajaDTO sesion) {
+        if (sesion.getUsuarioId() == null) {
+            throw new IllegalArgumentException("Usuario requerido para cerrar caja");
+        }
+        SesionCajaDTO abierta = buscarSesionAbierta(sesion.getUsuarioId());
+        if (abierta == null) {
+            throw new IllegalArgumentException("No tienes una caja abierta");
+        }
+        SesionCajaDTO resumen = obtenerResumenSesion(abierta.getId());
+        BigDecimal montoFinal = sesion.getMontoFinal() == null ? BigDecimal.ZERO : sesion.getMontoFinal();
+        String sql = "UPDATE sesiones_caja SET fecha_cierre = CURRENT_TIMESTAMP, monto_final = ?, "
+                + "total_transacciones = ?, total_ventas_efectivo = ?, total_ventas_virtual = ?, "
+                + "efectivo_esperado = ?, estado = 'CERRADA', observaciones = ? WHERE id = ? AND estado = 'ABIERTA'";
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setBigDecimal(1, montoFinal);
+            ps.setBigDecimal(2, resumen.getTotalTransacciones());
+            ps.setBigDecimal(3, resumen.getTotalVentasEfectivo());
+            ps.setBigDecimal(4, resumen.getTotalVentasVirtual());
+            ps.setBigDecimal(5, resumen.getEfectivoEsperado());
+            ps.setString(6, sesion.getObservaciones());
+            ps.setLong(7, abierta.getId());
+            return ps.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al cerrar caja", ex);
+        }
+    }
+
+    public SesionCajaDTO buscarSesionAbierta(Long usuarioId) {
+        String sql = "SELECT sc.*, c.nombre AS caja_nombre, u.nombre_completo AS usuario_nombre "
+                + "FROM sesiones_caja sc "
+                + "INNER JOIN cajas c ON sc.caja_id = c.id "
+                + "INNER JOIN usuarios u ON sc.usuario_id = u.id "
+                + "WHERE sc.usuario_id = ? AND sc.estado = 'ABIERTA' ORDER BY sc.fecha_apertura DESC LIMIT 1";
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setLong(1, usuarioId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? mapearSesionCaja(rs) : null;
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al buscar caja abierta", ex);
+        }
+    }
+
+    public boolean tieneSesionAbierta(Long usuarioId) {
+        return buscarSesionAbierta(usuarioId) != null;
+    }
+
+    public List<SesionCajaDTO> listarUltimasSesionesCaja(int limite) {
+        String sql = "SELECT sc.*, c.nombre AS caja_nombre, u.nombre_completo AS usuario_nombre "
+                + "FROM sesiones_caja sc "
+                + "INNER JOIN cajas c ON sc.caja_id = c.id "
+                + "INNER JOIN usuarios u ON sc.usuario_id = u.id "
+                + "ORDER BY sc.fecha_apertura DESC LIMIT ?";
+        List<SesionCajaDTO> sesiones = new ArrayList<>();
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, limite <= 0 ? 2 : limite);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    sesiones.add(mapearSesionCaja(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al listar sesiones de caja", ex);
+        }
+        return sesiones;
+    }
+
+    public SesionCajaDTO obtenerResumenSesion(Long sesionId) {
+        String sql = "SELECT COALESCE(SUM(total), 0) AS total_transacciones, "
+                + "COALESCE(SUM(monto_efectivo), 0) AS efectivo, "
+                + "COALESCE(SUM(monto_virtual), 0) AS virtual "
+                + "FROM transacciones WHERE sesion_caja_id = ? AND tipo_transaccion_id = 2 AND estado = 'COMPLETADA'";
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            SesionCajaDTO sesion = buscarSesionCajaPorId(con, sesionId);
+            if (sesion == null) {
+                throw new IllegalArgumentException("Sesion de caja no encontrada");
+            }
+            ps.setLong(1, sesionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    sesion.setTotalTransacciones(rs.getBigDecimal("total_transacciones"));
+                    sesion.setTotalVentasEfectivo(rs.getBigDecimal("efectivo"));
+                    sesion.setTotalVentasVirtual(rs.getBigDecimal("virtual"));
+                    sesion.setEfectivoEsperado(sesion.getMontoInicial().add(sesion.getTotalVentasEfectivo()));
+                }
+            }
+            return sesion;
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al obtener resumen de caja", ex);
         }
     }
 
@@ -267,5 +389,38 @@ public class VentaDAO {
         venta.setTipoTransaccionNombre(rs.getString("tipo_nombre"));
         venta.setUsuarioNombre(rs.getString("usuario_nombre"));
         return venta;
+    }
+
+    private SesionCajaDTO buscarSesionCajaPorId(Connection con, Long id) throws SQLException {
+        String sql = "SELECT sc.*, c.nombre AS caja_nombre, u.nombre_completo AS usuario_nombre "
+                + "FROM sesiones_caja sc "
+                + "INNER JOIN cajas c ON sc.caja_id = c.id "
+                + "INNER JOIN usuarios u ON sc.usuario_id = u.id WHERE sc.id = ?";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setLong(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? mapearSesionCaja(rs) : null;
+            }
+        }
+    }
+
+    private SesionCajaDTO mapearSesionCaja(ResultSet rs) throws SQLException {
+        SesionCajaDTO sesion = new SesionCajaDTO();
+        sesion.setId(rs.getLong("id"));
+        sesion.setCajaId(rs.getLong("caja_id"));
+        sesion.setUsuarioId(rs.getLong("usuario_id"));
+        sesion.setFechaApertura(rs.getTimestamp("fecha_apertura"));
+        sesion.setFechaCierre(rs.getTimestamp("fecha_cierre"));
+        sesion.setMontoInicial(rs.getBigDecimal("monto_inicial"));
+        sesion.setMontoFinal(rs.getBigDecimal("monto_final"));
+        sesion.setTotalTransacciones(rs.getBigDecimal("total_transacciones"));
+        sesion.setTotalVentasEfectivo(rs.getBigDecimal("total_ventas_efectivo"));
+        sesion.setTotalVentasVirtual(rs.getBigDecimal("total_ventas_virtual"));
+        sesion.setEfectivoEsperado(rs.getBigDecimal("efectivo_esperado"));
+        sesion.setEstado(rs.getString("estado"));
+        sesion.setObservaciones(rs.getString("observaciones"));
+        sesion.setCajaNombre(rs.getString("caja_nombre"));
+        sesion.setUsuarioNombre(rs.getString("usuario_nombre"));
+        return sesion;
     }
 }

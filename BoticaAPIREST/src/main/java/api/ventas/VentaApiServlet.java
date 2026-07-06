@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import rmi.dto.DetalleTransaccionDTO;
+import rmi.dto.SesionCajaDTO;
 import rmi.dto.TransaccionDTO;
 import rmi.ventas.VentaServiceRMI;
 
@@ -54,9 +55,17 @@ public class VentaApiServlet extends HttpServlet {
                 return;
             }
 
+            VentaServiceRMI ventaService = RMIClientFactory.getVentaService();
+            SesionCajaDTO sesionCaja = ventaService.buscarSesionAbierta(ventaRequest.usuarioId);
+            if (sesionCaja == null) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write(gson.toJson(ApiResponse.error("No tiene una caja abierta. Abra caja antes de vender.")));
+                return;
+            }
+
             TransaccionDTO venta = new TransaccionDTO();
             venta.setUsuarioId(ventaRequest.usuarioId);
-            venta.setSesionCajaId(ventaRequest.sesionCajaId);
+            venta.setSesionCajaId(sesionCaja.getId());
             venta.setNombrePersona(ventaRequest.clienteNombre);
             venta.setMetodoPago(ventaRequest.metodoPago);
             venta.setTipoComprobante(ventaRequest.tipoComprobante);
@@ -66,7 +75,6 @@ public class VentaApiServlet extends HttpServlet {
             venta.setVuelto(ventaRequest.vuelto);
             venta.setObservaciones(ventaRequest.observaciones);
 
-            VentaServiceRMI ventaService = RMIClientFactory.getVentaService();
             Long ventaId = ventaService.registrarVenta(venta, ventaRequest.detalles);
             TransaccionDTO registrada = ventaService.buscarPorId(ventaId);
 

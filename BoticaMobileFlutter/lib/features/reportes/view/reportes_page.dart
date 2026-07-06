@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/operational_data_service.dart';
 import '../../../core/widgets/error_panel.dart';
+import '../../../core/widgets/mobile_module_widgets.dart';
+import '../../caja/service/cash_service.dart';
 
 class ReportesPage extends StatefulWidget {
   const ReportesPage({super.key});
@@ -13,203 +15,402 @@ class ReportesPage extends StatefulWidget {
 
 class _ReportesPageState extends State<ReportesPage> {
   late final OperationalDataService _service;
-  late DateTime _desde;
-  late DateTime _hasta;
-  late Future<SalesReportData> _future;
+  late final CashService _cashService;
+  SalesReportData? _report;
+  ModuleData _sales = const ModuleData(rows: [], stats: []);
+  ModuleData _purchases = const ModuleData(rows: [], stats: []);
+  List<CashSession> _sessions = const [];
+  String? _error;
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _desde = DateTime(now.year, now.month);
-    _hasta = DateTime(now.year, now.month, now.day);
-    _service = OperationalDataService(ApiClient());
-    _future = _load();
+    final apiClient = ApiClient();
+    _service = OperationalDataService(apiClient);
+    _cashService = CashService(apiClient);
+    _load();
   }
 
-  Future<SalesReportData> _load() => _service.salesReport(desde: _formatDate(_desde), hasta: _formatDate(_hasta));
-  void _reload() => setState(() => _future = _load());
-
-  void _setRange(_ReportRange range) {
-    final now = DateTime.now();
+  Future<void> _load() async {
     setState(() {
-      switch (range) {
-        case _ReportRange.today:
-          _desde = DateTime(now.year, now.month, now.day);
-          _hasta = _desde;
-        case _ReportRange.week:
-          _desde = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
-          _hasta = DateTime(now.year, now.month, now.day);
-        case _ReportRange.month:
-          _desde = DateTime(now.year, now.month);
-          _hasta = DateTime(now.year, now.month, now.day);
-      }
-      _future = _load();
+      _loading = true;
+      _error = null;
     });
+    final now = DateTime.now();
+    final today = _formatDate(DateTime(now.year, now.month, now.day));
+    try {
+      final report = await _service.salesReport(desde: today, hasta: today);
+      final sales = await _service.latestSales(limit: 2);
+      final purchases = await _service.purchases(limit: 2);
+      final sessions = await _cashService.recentSessions(limit: 2);
+      if (!mounted) return;
+      setState(() {
+        _report = report;
+        _sales = sales;
+        _purchases = purchases;
+        _sessions = sessions;
+      });
+    } catch (ex) {
+      if (!mounted) return;
+      setState(() => _error = ex.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final report = _report;
     return Scaffold(
-      appBar: AppBar(leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => Navigator.of(context).maybePop()), title: const Text('Reportes'), actions: [IconButton(onPressed: _reload, icon: const Icon(Icons.refresh_rounded))]),
-      body: FutureBuilder<SalesReportData>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-          if (snapshot.hasError) return ErrorPanel(message: snapshot.error.toString(), onRetry: _reload);
-          final report = snapshot.data!;
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-            children: [
-              _ReportHero(report: report),
-              const SizedBox(height: 14),
-              _RangeSelector(onSelected: _setRange, label: '${report.desde} al ${report.hasta}'),
-              const SizedBox(height: 18),
-              const _SectionTitle(title: 'Metodo de pago'),
-              const SizedBox(height: 10),
-              _PaymentGrid(report: report),
-              const SizedBox(height: 18),
-              const _SectionTitle(title: 'Ventas por dia'),
-              const SizedBox(height: 10),
-              if (report.ventasPorDia.isEmpty) const _EmptyCard('No hay ventas por dia en este rango.') else for (final row in report.ventasPorDia.take(7)) _ReportRow(row: row, color: const Color(0xFFC2255C)),
-              const SizedBox(height: 18),
-              const _SectionTitle(title: 'Detalle de ventas'),
-              const SizedBox(height: 10),
-              if (report.ventas.isEmpty) const _EmptyCard('No hay ventas registradas en este rango.') else for (final row in report.ventas.take(10)) _ReportRow(row: row, color: const Color(0xFF087B68)),
-            ],
-          );
-        },
+      appBar: AppBar(
+        leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () => Navigator.of(context).maybePop()),
+        title: const Text('Reportes'),
+        actions: [
+          IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded))
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+        children: [
+          CompactModuleHeader(
+            title: report == null
+                ? 'Resumen operativo'
+                : 'S/ ${report.totalGeneral}',
+            subtitle: report == null
+                ? 'Ventas, compras y caja'
+                : 'Ventas de hoy - ${report.cantidadVentas} tickets',
+            icon: Icons.bar_chart_rounded,
+          ),
+          const SizedBox(height: 12),
+          if (_error != null) ErrorPanel(message: _error!, onRetry: _load),
+          if (_loading)
+            const Card(
+                child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('Cargando reportes...'))),
+          if (report != null) ...[
+            _PaymentSummary(report: report),
+            const SizedBox(height: 10),
+            _ReportMixCard(report: report),
+          ],
+          _ActivityTabs(
+              sales: _sales.rows,
+              purchases: _purchases.rows,
+              sessions: _sessions),
+        ],
       ),
     );
   }
 }
 
-class _ReportHero extends StatelessWidget {
-  const _ReportHero({required this.report});
+class _ReportMixCard extends StatelessWidget {
+  const _ReportMixCard({required this.report});
   final SalesReportData report;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(28), gradient: const LinearGradient(colors: [Color(0xFFC2255C), Color(0xFFE36A96)])),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [Container(width: 54, height: 54, decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(18)), child: const Icon(Icons.bar_chart_rounded, color: Colors.white, size: 31)), const Spacer(), const _HeroBadge('Reporte de ventas')]),
-        const SizedBox(height: 18),
-        Text('S/ ${report.totalGeneral}', style: Theme.of(context).textTheme.displaySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 4),
-        const Text('Total vendido en el rango seleccionado', style: TextStyle(color: Colors.white70)),
-        const SizedBox(height: 14),
-        Wrap(spacing: 8, runSpacing: 8, children: [_HeroBadge('${report.cantidadVentas} ventas'), _HeroBadge('Promedio S/ ${report.promedioVenta}'), _HeroBadge('${report.ventasPorDia.length} dias')]),
-      ]),
-    );
-  }
-}
-
-class _RangeSelector extends StatelessWidget {
-  const _RangeSelector({required this.onSelected, required this.label});
-  final ValueChanged<_ReportRange> onSelected;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
+    final values = [
+      _ReportSlice('Efectivo', _money(report.totalEfectivo), brandRed),
+      _ReportSlice(
+          'Yape/Plin', _money(report.totalYapePlin), const Color(0xFF7C3AED)),
+      _ReportSlice(
+          'Tarjeta', _money(report.totalTarjeta), const Color(0xFF1F5F8B)),
+      _ReportSlice('Mixto', _money(report.totalMixto), const Color(0xFF8A5A16)),
+    ];
+    final total = values.fold<double>(0, (sum, item) => sum + item.value);
+    final top = values.where((item) => item.value > 0).fold<_ReportSlice?>(null,
+        (best, item) => best == null || item.value > best.value ? item : best);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Filtro rapido', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
-          const SizedBox(height: 4),
-          Text(label, style: const TextStyle(color: Colors.black54)),
-          const SizedBox(height: 12),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            _RangeChip(label: 'Hoy', onTap: () => onSelected(_ReportRange.today)),
-            _RangeChip(label: 'Semana', onTap: () => onSelected(_ReportRange.week)),
-            _RangeChip(label: 'Mes', onTap: () => onSelected(_ReportRange.month)),
-          ]),
+        child: Row(children: [
+          SizedBox(
+            width: 104,
+            height: 104,
+            child: CustomPaint(
+              painter: _ReportDonutPainter(values),
+              child: Center(
+                child: Text('${report.cantidadVentas}\ntickets',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontWeight: FontWeight.w900)),
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Mezcla de pagos',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+              const SizedBox(height: 6),
+              Text(
+                total == 0
+                    ? 'Sin ventas registradas hoy'
+                    : 'Predomina ${top?.label ?? 'venta'} con S/ ${(top?.value ?? 0).toStringAsFixed(2)}',
+                style: const TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: 8),
+              Text('Promedio S/ ${report.promedioVenta}',
+                  style: const TextStyle(fontWeight: FontWeight.w800)),
+            ]),
+          ),
         ]),
       ),
     );
   }
 }
 
-class _PaymentGrid extends StatelessWidget {
-  const _PaymentGrid({required this.report});
+class _PaymentSummary extends StatelessWidget {
+  const _PaymentSummary({required this.report});
   final SalesReportData report;
 
   @override
-  Widget build(BuildContext context) {
-    final items = [
-      _PayItem('Efectivo', report.totalEfectivo, Icons.payments_rounded, const Color(0xFF087B68)),
-      _PayItem('Yape/Plin', report.totalYapePlin, Icons.phone_iphone_rounded, const Color(0xFF6741D9)),
-      _PayItem('Tarjeta', report.totalTarjeta, Icons.credit_card_rounded, const Color(0xFF1C7ED6)),
-      _PayItem('Mixto', report.totalMixto, Icons.call_split_rounded, const Color(0xFFE67700)),
-    ];
-    return LayoutBuilder(builder: (context, constraints) {
-      final columns = constraints.maxWidth >= 760 ? 4 : 2;
-      return GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: items.length,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: columns, mainAxisSpacing: 10, crossAxisSpacing: 10, mainAxisExtent: 116),
-        itemBuilder: (_, index) => _PaymentCard(item: items[index]),
+  Widget build(BuildContext context) => SizedBox(
+        height: 70,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          children: [
+            _PaymentPill(
+              icon: Icons.payments_rounded,
+              label: 'Efectivo',
+              value: 'S/ ${report.totalEfectivo}',
+              color: brandRed,
+            ),
+            _PaymentPill(
+              icon: Icons.qr_code_2_rounded,
+              label: 'Yape/Plin',
+              value: 'S/ ${report.totalYapePlin}',
+              color: const Color(0xFF7C3AED),
+            ),
+            _PaymentPill(
+              icon: Icons.credit_card_rounded,
+              label: 'Tarjeta',
+              value: 'S/ ${report.totalTarjeta}',
+              color: const Color(0xFF1F5F8B),
+            ),
+          ],
+        ),
       );
-    });
-  }
 }
 
-class _PaymentCard extends StatelessWidget {
-  const _PaymentCard({required this.item});
-  final _PayItem item;
-  @override
-  Widget build(BuildContext context) => Card(child: Padding(padding: const EdgeInsets.all(13), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Container(width: 36, height: 36, decoration: BoxDecoration(color: item.color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(13)), child: Icon(item.icon, color: item.color, size: 20)), const Spacer(), Text('S/ ${item.value}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900)), Text(item.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.black54, fontSize: 12))])));
-}
-
-class _ReportRow extends StatelessWidget {
-  const _ReportRow({required this.row, required this.color});
-  final ModuleRow row;
-  final Color color;
-  @override
-  Widget build(BuildContext context) => Card(child: ListTile(leading: CircleAvatar(backgroundColor: color.withValues(alpha: 0.12), child: Icon(Icons.receipt_long_rounded, color: color)), title: Text(row.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Text('${row.subtitle}\n${row.footnote}', maxLines: 2, overflow: TextOverflow.ellipsis), trailing: Text(row.value, style: TextStyle(color: color, fontWeight: FontWeight.w900))));
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
-  final String title;
-  @override
-  Widget build(BuildContext context) => Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900));
-}
-
-class _RangeChip extends StatelessWidget {
-  const _RangeChip({required this.label, required this.onTap});
-  final String label;
-  final VoidCallback onTap;
-  @override
-  Widget build(BuildContext context) => ActionChip(label: Text(label), onPressed: onTap, backgroundColor: Colors.white, side: BorderSide.none, avatar: Icon(Icons.calendar_month_rounded, size: 17, color: Theme.of(context).colorScheme.primary));
-}
-
-class _HeroBadge extends StatelessWidget {
-  const _HeroBadge(this.label);
-  final String label;
-  @override
-  Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7), decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(999)), child: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12)));
-}
-
-class _EmptyCard extends StatelessWidget {
-  const _EmptyCard(this.text);
-  final String text;
-  @override
-  Widget build(BuildContext context) => Card(child: Padding(padding: const EdgeInsets.all(16), child: Text(text)));
-}
-
-class _PayItem {
-  const _PayItem(this.label, this.value, this.icon, this.color);
+class _PaymentPill extends StatelessWidget {
+  const _PaymentPill(
+      {required this.icon,
+      required this.label,
+      required this.value,
+      required this.color});
+  final IconData icon;
   final String label;
   final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 150,
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: color.withValues(alpha: 0.18)),
+        ),
+        child: Row(children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: color.withValues(alpha: 0.12),
+            child: Icon(icon, color: color, size: 19),
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.black54, fontSize: 12)),
+              Text(value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: color, fontWeight: FontWeight.w900)),
+            ]),
+          ),
+        ]),
+      );
+}
+
+class _ActivityTabs extends StatefulWidget {
+  const _ActivityTabs(
+      {required this.sales, required this.purchases, required this.sessions});
+  final List<ModuleRow> sales;
+  final List<ModuleRow> purchases;
+  final List<CashSession> sessions;
+
+  @override
+  State<_ActivityTabs> createState() => _ActivityTabsState();
+}
+
+class _ActivityTabsState extends State<_ActivityTabs> {
+  String _tab = 'ventas';
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const SizedBox(height: 14),
+      Text('Actividad reciente',
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.w900)),
+      const SizedBox(height: 6),
+      SizedBox(
+        height: 40,
+        child: ListView(scrollDirection: Axis.horizontal, children: [
+          _TabChip(
+              label: 'Ventas', value: 'ventas', selected: _tab, onTap: _setTab),
+          _TabChip(
+              label: 'Compras',
+              value: 'compras',
+              selected: _tab,
+              onTap: _setTab),
+          _TabChip(
+              label: 'Caja', value: 'caja', selected: _tab, onTap: _setTab),
+        ]),
+      ),
+      const SizedBox(height: 8),
+      if (_tab == 'ventas')
+        _RowsView(
+            rows: widget.sales,
+            icon: Icons.receipt_long_rounded,
+            empty: 'No hay ventas recientes.'),
+      if (_tab == 'compras')
+        _RowsView(
+            rows: widget.purchases,
+            icon: Icons.inventory_2_rounded,
+            empty: 'No hay compras recientes.'),
+      if (_tab == 'caja') _CashRowsView(sessions: widget.sessions),
+    ]);
+  }
+
+  void _setTab(String value) => setState(() => _tab = value);
+}
+
+class _TabChip extends StatelessWidget {
+  const _TabChip(
+      {required this.label,
+      required this.value,
+      required this.selected,
+      required this.onTap});
+  final String label;
+  final String value;
+  final String selected;
+  final ValueChanged<String> onTap;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(right: 6),
+        child: ChoiceChip(
+          label: Text(label),
+          selected: selected == value,
+          onSelected: (_) => onTap(value),
+          visualDensity: VisualDensity.compact,
+        ),
+      );
+}
+
+class _RowsView extends StatelessWidget {
+  const _RowsView(
+      {required this.rows, required this.icon, required this.empty});
+  final List<ModuleRow> rows;
   final IconData icon;
+  final String empty;
+
+  @override
+  Widget build(BuildContext context) => Column(children: [
+        for (final row in rows.take(2))
+          CompactRecordCard(
+              title: row.title,
+              subtitle: row.subtitle,
+              footnote: row.footnote,
+              value: row.value,
+              icon: icon),
+        if (rows.isEmpty)
+          Card(
+              child: Padding(
+                  padding: const EdgeInsets.all(16), child: Text(empty))),
+      ]);
+}
+
+class _CashRowsView extends StatelessWidget {
+  const _CashRowsView({required this.sessions});
+  final List<CashSession> sessions;
+
+  @override
+  Widget build(BuildContext context) => Column(children: [
+        for (final session in sessions)
+          CompactRecordCard(
+            title: session.cajaNombre,
+            subtitle: 'Inicial S/ ${session.montoInicial.toStringAsFixed(2)}',
+            footnote:
+                'Esperado S/ ${session.efectivoEsperado.toStringAsFixed(2)}',
+            value: 'Caja ${session.id}',
+            icon: Icons.account_balance_wallet_rounded,
+          ),
+        if (sessions.isEmpty)
+          const Card(
+              child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('No hay sesiones de caja.'))),
+      ]);
+}
+
+class _ReportSlice {
+  const _ReportSlice(this.label, this.value, this.color);
+  final String label;
+  final double value;
   final Color color;
 }
 
-enum _ReportRange { today, week, month }
+class _ReportDonutPainter extends CustomPainter {
+  const _ReportDonutPainter(this.values);
+  final List<_ReportSlice> values;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = size.width * 0.13;
+    final rect = Offset.zero & size;
+    final total = values.fold<double>(0, (sum, item) => sum + item.value);
+    final base = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round
+      ..color = brandRed.withValues(alpha: 0.08);
+    canvas.drawArc(rect.deflate(stroke / 2), -1.57, 6.28, false, base);
+    if (total <= 0) return;
+    var start = -1.57;
+    for (final item in values.where((item) => item.value > 0)) {
+      final sweep = (item.value / total) * 6.28;
+      final paint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke
+        ..strokeCap = StrokeCap.round
+        ..color = item.color;
+      canvas.drawArc(rect.deflate(stroke / 2), start, sweep, false, paint);
+      start += sweep;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ReportDonutPainter oldDelegate) =>
+      oldDelegate.values != values;
+}
+
+double _money(String value) {
+  final cleaned = value.replaceAll('S/', '').replaceAll(',', '').trim();
+  return double.tryParse(cleaned) ?? 0;
+}
 
 String _formatDate(DateTime date) {
   final month = date.month.toString().padLeft(2, '0');
