@@ -16,7 +16,7 @@ public class ProductoDAO {
 
     public List<ProductoResumenDTO> buscarParaVenta(String termino, int limite) {
         String sql = "SELECT p.id, p.catalogo_producto_id, p.lote, p.fecha_vencimiento, "
-                + "p.stock_actual, p.precio_venta, c.codigo_producto, c.nombre_comercial, "
+                + "p.stock_actual, p.precio_compra, p.precio_venta, c.codigo_producto, c.nombre_comercial, "
                 + "c.principio_activo, c.concentracion, c.presentacion, c.laboratorio "
                 + "FROM productos p "
                 + "INNER JOIN catalogo_productos_digemid c ON p.catalogo_producto_id = c.id "
@@ -52,7 +52,7 @@ public class ProductoDAO {
 
     public ProductoResumenDTO buscarPorId(Long id) {
         String sql = "SELECT p.id, p.catalogo_producto_id, p.lote, p.fecha_vencimiento, "
-                + "p.stock_actual, p.precio_venta, c.codigo_producto, c.nombre_comercial, "
+                + "p.stock_actual, p.precio_compra, p.precio_venta, c.codigo_producto, c.nombre_comercial, "
                 + "c.principio_activo, c.concentracion, c.presentacion, c.laboratorio "
                 + "FROM productos p "
                 + "INNER JOIN catalogo_productos_digemid c ON p.catalogo_producto_id = c.id "
@@ -216,6 +216,7 @@ public class ProductoDAO {
         producto.setLote(rs.getString("lote"));
         producto.setFechaVencimiento(String.valueOf(rs.getDate("fecha_vencimiento")));
         producto.setStockActual(rs.getInt("stock_actual"));
+        producto.setPrecioCompra(rs.getBigDecimal("precio_compra"));
         producto.setPrecioVenta(rs.getBigDecimal("precio_venta"));
         producto.setCodigoProducto(rs.getString("codigo_producto"));
         producto.setNombreComercial(rs.getString("nombre_comercial"));

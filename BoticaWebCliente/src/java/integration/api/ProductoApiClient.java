@@ -21,6 +21,32 @@ public class ProductoApiClient {
 
     private final WebApiClient apiClient = new WebApiClient();
 
+    public List<ProductoVenta> buscarParaVenta(String termino, int limite) throws IOException {
+        ApiResult result = apiClient.get("/api/productos?termino=" + URLEncoder.encode(termino, StandardCharsets.UTF_8) + "&limite=" + limite);
+        if (!result.isSuccess()) {
+            throw new IOException(result.getMessage());
+        }
+        List<ProductoVenta> productos = new ArrayList<>();
+        JsonArray data = result.getJson().getAsJsonArray("data");
+        if (data == null) {
+            return productos;
+        }
+        for (JsonElement element : data) {
+            if (element.isJsonObject()) {
+                productos.add(toProductoVenta(element.getAsJsonObject()));
+            }
+        }
+        return productos;
+    }
+
+    public ProductoVenta buscarVentaPorId(Long id) throws IOException {
+        ApiResult result = apiClient.get("/api/productos/" + id);
+        if (!result.isSuccess()) {
+            throw new IOException(result.getMessage());
+        }
+        return toProductoVenta(result.getJson().getAsJsonObject("data"));
+    }
+
     public InventarioResult buscarInventario(String termino, String filtroStock, String filtroVencimiento, int pagina, int porPagina) throws IOException {
         StringBuilder path = new StringBuilder("/api/productos/inventario");
         path.append("?pagina=").append(pagina);
@@ -82,6 +108,22 @@ public class ProductoApiClient {
         if (data.has("catalogoProducto") && data.get("catalogoProducto").isJsonObject()) {
             producto.setCatalogoProducto(toCatalogo(data.getAsJsonObject("catalogoProducto")));
         }
+        return producto;
+    }
+
+    private ProductoVenta toProductoVenta(JsonObject data) {
+        ProductoVenta producto = new ProductoVenta();
+        producto.id = getLong(data, "id");
+        producto.catalogoProductoId = getLong(data, "catalogoProductoId");
+        producto.nombreComercial = getString(data, "nombreComercial");
+        producto.concentracion = getString(data, "concentracion");
+        producto.presentacion = getString(data, "presentacion");
+        producto.laboratorio = getString(data, "laboratorio");
+        producto.lote = getString(data, "lote");
+        producto.fechaVencimiento = getString(data, "fechaVencimiento");
+        producto.stockActual = getInt(data, "stockActual");
+        producto.precioCompra = getBigDecimal(data, "precioCompra");
+        producto.precioVenta = getBigDecimal(data, "precioVenta");
         return producto;
     }
 
@@ -164,5 +206,19 @@ public class ProductoApiClient {
         public int getTotal() {
             return total;
         }
+    }
+
+    public static class ProductoVenta {
+        public Long id;
+        public Long catalogoProductoId;
+        public String nombreComercial;
+        public String concentracion;
+        public String presentacion;
+        public String laboratorio;
+        public String lote;
+        public String fechaVencimiento;
+        public int stockActual;
+        public BigDecimal precioCompra;
+        public BigDecimal precioVenta;
     }
 }

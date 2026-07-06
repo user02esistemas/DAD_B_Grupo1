@@ -1,9 +1,7 @@
 package controller;
 
-import DAO.ProductoDAO;
 import DAO.SesionCajaDAO;
 import DAO.TransaccionDAO;
-import DTO.ProductoDTO;
 import DTO.SesionCajaDTO;
 import DTO.TransaccionDTO;
 import DTO.DetalleTransaccionDTO;
@@ -12,6 +10,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import integration.api.CajaApiClient;
+import integration.api.ProductoApiClient;
 import integration.api.VentaApiClient;
 
 import jakarta.servlet.ServletException;
@@ -45,6 +44,7 @@ public class VentaController extends HttpServlet {
 
     private final Gson gson = new Gson();
     private final CajaApiClient cajaApiClient = new CajaApiClient();
+    private final ProductoApiClient productoApiClient = new ProductoApiClient();
     private final VentaApiClient ventaApiClient = new VentaApiClient();
     private static final BigDecimal FACTOR_IGV = new BigDecimal("1.18");
 
@@ -128,23 +128,22 @@ public class VentaController extends HttpServlet {
                 return;
             }
 
-            ProductoDAO dao = new ProductoDAO();
-            List<ProductoDTO> productos = dao.buscarParaVenta(termino.trim(), 15);
+            List<ProductoApiClient.ProductoVenta> productos = productoApiClient.buscarParaVenta(termino.trim(), 15);
 
             JsonArray jsonArray = new JsonArray();
-            for (ProductoDTO p : productos) {
+            for (ProductoApiClient.ProductoVenta p : productos) {
                 JsonObject obj = new JsonObject();
-                obj.addProperty("id", p.getId());
-                obj.addProperty("catalogoId", p.getCatalogoProductoId());
-                obj.addProperty("nombre", p.getCatalogoProducto().getNombreComercial());
-                obj.addProperty("concentracion", p.getCatalogoProducto().getConcentracion());
-                obj.addProperty("presentacion", p.getCatalogoProducto().getPresentacion());
-                obj.addProperty("laboratorio", p.getCatalogoProducto().getLaboratorio());
-                obj.addProperty("lote", p.getLote());
-                obj.addProperty("fechaVencimiento", p.getFechaVencimiento().toString());
-                obj.addProperty("stock", p.getStockActual());
-                obj.addProperty("precioVenta", p.getPrecioVenta());
-                obj.addProperty("precioCompra", p.getPrecioCompra());
+                obj.addProperty("id", p.id);
+                obj.addProperty("catalogoId", p.catalogoProductoId);
+                obj.addProperty("nombre", p.nombreComercial);
+                obj.addProperty("concentracion", p.concentracion);
+                obj.addProperty("presentacion", p.presentacion);
+                obj.addProperty("laboratorio", p.laboratorio);
+                obj.addProperty("lote", p.lote);
+                obj.addProperty("fechaVencimiento", p.fechaVencimiento);
+                obj.addProperty("stock", p.stockActual);
+                obj.addProperty("precioVenta", p.precioVenta);
+                obj.addProperty("precioCompra", p.precioCompra);
                 jsonArray.add(obj);
             }
 
@@ -176,19 +175,18 @@ public class VentaController extends HttpServlet {
             }
 
             Long id = Long.parseLong(idStr);
-            ProductoDAO dao = new ProductoDAO();
-            ProductoDTO p = dao.buscarPorId(id);
+            ProductoApiClient.ProductoVenta p = productoApiClient.buscarVentaPorId(id);
 
             if (p != null) {
                 json.addProperty("success", true);
-                json.addProperty("id", p.getId());
-                json.addProperty("nombre", p.getCatalogoProducto().getNombreComercial());
-                json.addProperty("concentracion", p.getCatalogoProducto().getConcentracion());
-                json.addProperty("presentacion", p.getCatalogoProducto().getPresentacion());
-                json.addProperty("laboratorio", p.getCatalogoProducto().getLaboratorio());
-                json.addProperty("lote", p.getLote());
-                json.addProperty("stock", p.getStockActual());
-                json.addProperty("precioVenta", p.getPrecioVenta());
+                json.addProperty("id", p.id);
+                json.addProperty("nombre", p.nombreComercial);
+                json.addProperty("concentracion", p.concentracion);
+                json.addProperty("presentacion", p.presentacion);
+                json.addProperty("laboratorio", p.laboratorio);
+                json.addProperty("lote", p.lote);
+                json.addProperty("stock", p.stockActual);
+                json.addProperty("precioVenta", p.precioVenta);
             } else {
                 json.addProperty("success", false);
                 json.addProperty("message", "Producto no encontrado");
@@ -320,7 +318,6 @@ public class VentaController extends HttpServlet {
             // Calcular totales
             BigDecimal totalCalculado = BigDecimal.ZERO;
             List<DetalleTransaccionDTO> detalles = new ArrayList<>();
-            ProductoDAO productoDAO = new ProductoDAO();
 
             for (int i = 0; i < productosArray.size(); i++) {
                 JsonObject prod = productosArray.get(i).getAsJsonObject();
@@ -329,11 +326,11 @@ public class VentaController extends HttpServlet {
                 BigDecimal precioUnit = new BigDecimal(prod.get("precioUnitario").getAsString());
 
                 // Validar stock
-                ProductoDTO producto = productoDAO.buscarPorId(productoId);
-                if (producto == null || producto.getStockActual() < cantidad) {
+                ProductoApiClient.ProductoVenta producto = productoApiClient.buscarVentaPorId(productoId);
+                if (producto == null || producto.stockActual < cantidad) {
                     json.addProperty("success", false);
                     json.addProperty("message", "Stock insuficiente para " +
-                            (producto != null ? producto.getCatalogoProducto().getNombreComercial() : "producto"));
+                            (producto != null ? producto.nombreComercial : "producto"));
                     out.print(json.toString());
                     return;
                 }

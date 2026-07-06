@@ -18,6 +18,7 @@ public class ProductoResumenDTO implements Serializable {
     private String lote;
     private String fechaVencimiento;
     private Integer stockActual;
+    private BigDecimal precioCompra;
     private BigDecimal precioVenta;
 
     public Long getId() {
@@ -110,6 +111,14 @@ public class ProductoResumenDTO implements Serializable {
 
     public BigDecimal getPrecioVenta() {
         return precioVenta;
+    }
+
+    public BigDecimal getPrecioCompra() {
+        return precioCompra;
+    }
+
+    public void setPrecioCompra(BigDecimal precioCompra) {
+        this.precioCompra = precioCompra;
     }
 
     public void setPrecioVenta(BigDecimal precioVenta) {
