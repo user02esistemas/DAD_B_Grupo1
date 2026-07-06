@@ -3,12 +3,14 @@ package controller;
 import DAO.DashboardDAO;
 import DTO.UsuarioDTO;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import integration.api.DashboardApiClient;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
@@ -24,6 +26,7 @@ import java.util.Map;
 public class DashboardController extends HttpServlet {
 
     private final DashboardDAO dashboardDAO = new DashboardDAO();
+    private final DashboardApiClient dashboardApiClient = new DashboardApiClient();
     private final Gson gson = new Gson();
 
     @Override
@@ -43,7 +46,7 @@ public class DashboardController extends HttpServlet {
         try {
             switch (action) {
                 case "resumen":
-                    out.print(gson.toJson(obtenerResumen()));
+                    out.print(gson.toJson(obtenerResumenApiCombinado()));
                     break;
                 case "topProductos":
                     int limite = getIntParam(request, "limite", 5);
@@ -62,7 +65,7 @@ public class DashboardController extends HttpServlet {
                     break;
                 case "productosStockBajo":
                     int limiteStock = getIntParam(request, "limite", 5);
-                    out.print(gson.toJson(dashboardDAO.obtenerProductosStockBajo(limiteStock)));
+                    out.print(gson.toJson(dashboardApiClient.obtenerProductosStockBajo(limiteStock)));
                     break;
                 case "productosPorVencer":
                     int limiteVencer = getIntParam(request, "limite", 5);
@@ -109,6 +112,25 @@ public class DashboardController extends HttpServlet {
             error.put("error", e.getMessage());
             out.print(gson.toJson(error));
         }
+    }
+
+    private JsonObject obtenerResumenApiCombinado() throws IOException {
+        JsonObject resumen = dashboardApiClient.obtenerResumen();
+        // La API central ya entrega las métricas; estas listas quedan como
+        // compatibilidad temporal hasta exponer endpoints equivalentes.
+        if (!resumen.has("topProductos")) {
+            resumen.add("topProductos", gson.toJsonTree(dashboardDAO.obtenerTopProductosVendidos(5)));
+        }
+        if (!resumen.has("topProductosMes")) {
+            resumen.add("topProductosMes", gson.toJsonTree(dashboardDAO.obtenerTopProductosMes(5)));
+        }
+        if (!resumen.has("ventasSemana")) {
+            resumen.add("ventasSemana", gson.toJsonTree(dashboardDAO.obtenerVentasUltimos7Dias()));
+        }
+        if (!resumen.has("ultimasVentas")) {
+            resumen.add("ultimasVentas", gson.toJsonTree(dashboardDAO.obtenerUltimasVentas(5)));
+        }
+        return resumen;
     }
     
     /**

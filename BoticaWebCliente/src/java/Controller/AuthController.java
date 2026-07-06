@@ -8,10 +8,12 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import org.mindrot.jbcrypt.BCrypt;
+import integration.api.AuthApiClient;
 
 @WebServlet(name = "AuthController", urlPatterns = {"/AuthController"})
 public class AuthController extends HttpServlet {
+
+    private final AuthApiClient authApiClient = new AuthApiClient();
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -57,22 +59,11 @@ public class AuthController extends HttpServlet {
             return;
         }
 
-        UsuarioDTO usuario = UsuarioDTO.buscarPorUsername(username.trim());
-
-        if (usuario == null) {
-            request.setAttribute("error", "Usuario o contraseña incorrectos");
-            request.getRequestDispatcher("/login.jsp").forward(request, response);
-            return;
-        }
-
-        if (!usuario.isActivo()) {
-            request.setAttribute("error", "Usuario inactivo. Contacte al administrador");
-            request.getRequestDispatcher("/login.jsp").forward(request, response);
-            return;
-        }
-
-        if (!BCrypt.checkpw(password, usuario.getPassword())) {
-            request.setAttribute("error", "Usuario o contraseña incorrectos");
+        UsuarioDTO usuario;
+        try {
+            usuario = authApiClient.login(username.trim(), password);
+        } catch (Exception ex) {
+            request.setAttribute("error", ex.getMessage());
             request.getRequestDispatcher("/login.jsp").forward(request, response);
             return;
         }
@@ -93,6 +84,12 @@ public class AuthController extends HttpServlet {
 
         HttpSession session = request.getSession(false);
         if (session != null) {
+            Object username = session.getAttribute("username");
+            try {
+                authApiClient.logout(username == null ? null : username.toString());
+            } catch (Exception ignored) {
+                // La sesión web se cierra aunque el registro remoto de logout falle.
+            }
             session.invalidate();
         }
         response.sendRedirect(request.getContextPath() + "/login.jsp");

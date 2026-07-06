@@ -5,6 +5,7 @@ import DAO.DashboardDAO;
 import DTO.SesionCajaDTO;
 import DTO.UsuarioDTO;
 import com.google.gson.Gson;
+import integration.api.CajaApiClient;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -27,6 +28,7 @@ public class SesionCajaController extends HttpServlet {
 
     private final SesionCajaDAO sesionCajaDAO = new SesionCajaDAO();
     private final DashboardDAO dashboardDAO = new DashboardDAO();
+    private final CajaApiClient cajaApiClient = new CajaApiClient();
     private final Gson gson = new Gson();
 
     @Override
@@ -125,10 +127,10 @@ public class SesionCajaController extends HttpServlet {
     /**
      * Verificar si el usuario tiene sesión de caja activa
      */
-    private Map<String, Object> verificarSesionActiva(Long usuarioId) {
+    private Map<String, Object> verificarSesionActiva(Long usuarioId) throws IOException {
         Map<String, Object> resultado = new HashMap<>();
         
-        SesionCajaDTO sesion = sesionCajaDAO.buscarSesionAbierta(usuarioId);
+        SesionCajaDTO sesion = cajaApiClient.buscarSesionAbierta(usuarioId);
         
         if (sesion != null) {
             resultado.put("activa", true);
@@ -147,10 +149,10 @@ public class SesionCajaController extends HttpServlet {
     /**
      * Obtener estado completo de la caja del usuario
      */
-    private Map<String, Object> obtenerEstadoCaja(Long usuarioId) {
+    private Map<String, Object> obtenerEstadoCaja(Long usuarioId) throws IOException {
         Map<String, Object> resultado = new HashMap<>();
         
-        SesionCajaDTO sesion = sesionCajaDAO.buscarSesionAbierta(usuarioId);
+        SesionCajaDTO sesion = cajaApiClient.buscarSesionAbierta(usuarioId);
         
         if (sesion != null) {
             resultado.put("tieneCajaAbierta", true);
@@ -175,11 +177,11 @@ public class SesionCajaController extends HttpServlet {
     /**
      * Abrir nueva sesión de caja
      */
-    private Map<String, Object> abrirCaja(HttpServletRequest request, UsuarioDTO usuario) {
+    private Map<String, Object> abrirCaja(HttpServletRequest request, UsuarioDTO usuario) throws IOException {
         Map<String, Object> resultado = new HashMap<>();
         
         // Verificar que no tenga caja abierta
-        if (sesionCajaDAO.tieneSesionAbierta(usuario.getId())) {
+        if (cajaApiClient.buscarSesionAbierta(usuario.getId()) != null) {
             resultado.put("success", false);
             resultado.put("error", "Ya tienes una caja abierta");
             return resultado;
@@ -189,24 +191,13 @@ public class SesionCajaController extends HttpServlet {
         Long cajaId = getLongParam(request, "cajaId", 1L);
         BigDecimal montoInicial = getBigDecimalParam(request, "montoInicial", BigDecimal.ZERO);
         
-        // Crear sesión
-        SesionCajaDTO nuevaSesion = new SesionCajaDTO();
-        nuevaSesion.setCajaId(cajaId);
-        nuevaSesion.setUsuarioId(usuario.getId());
-        nuevaSesion.setMontoInicial(montoInicial);
+        SesionCajaDTO sesionCreada = cajaApiClient.abrir(usuario.getId(), cajaId, montoInicial);
         
-        Long sesionId = sesionCajaDAO.abrirSesion(nuevaSesion);
-        
-        if (sesionId != null) {
+        if (sesionCreada != null && sesionCreada.getId() != null) {
             resultado.put("success", true);
-            resultado.put("sesionId", sesionId);
+            resultado.put("sesionId", sesionCreada.getId());
             resultado.put("mensaje", "Caja abierta correctamente");
-            
-            // Retornar datos de la sesión creada
-            SesionCajaDTO sesionCreada = sesionCajaDAO.buscarPorId(sesionId);
-            if (sesionCreada != null) {
-                resultado.put("sesion", sesionCreada);
-            }
+            resultado.put("sesion", sesionCreada);
         } else {
             resultado.put("success", false);
             resultado.put("error", "No se pudo abrir la caja");
@@ -218,11 +209,11 @@ public class SesionCajaController extends HttpServlet {
     /**
      * Cerrar sesión de caja
      */
-    private Map<String, Object> cerrarCaja(HttpServletRequest request, UsuarioDTO usuario) {
+    private Map<String, Object> cerrarCaja(HttpServletRequest request, UsuarioDTO usuario) throws IOException {
         Map<String, Object> resultado = new HashMap<>();
         
         // Buscar sesión activa
-        SesionCajaDTO sesionActiva = sesionCajaDAO.buscarSesionAbierta(usuario.getId());
+        SesionCajaDTO sesionActiva = cajaApiClient.buscarSesionAbierta(usuario.getId());
         
         if (sesionActiva == null) {
             resultado.put("success", false);
@@ -241,28 +232,20 @@ public class SesionCajaController extends HttpServlet {
         resumen.setMontoFinal(montoFinal);
         resumen.setObservaciones(observaciones);
         
-        // Cerrar sesión
-        boolean cerrado = sesionCajaDAO.cerrarSesion(resumen);
-        
-        if (cerrado) {
-            // Calcular diferencia
-            BigDecimal diferencia = montoFinal.subtract(resumen.getEfectivoEsperado());
-            
-            resultado.put("success", true);
-            resultado.put("mensaje", "Caja cerrada correctamente");
-            resultado.put("resumen", resumen);
-            resultado.put("diferencia", diferencia);
-            
-            if (diferencia.compareTo(BigDecimal.ZERO) > 0) {
-                resultado.put("tipoDiferencia", "SOBRANTE");
-            } else if (diferencia.compareTo(BigDecimal.ZERO) < 0) {
-                resultado.put("tipoDiferencia", "FALTANTE");
-            } else {
-                resultado.put("tipoDiferencia", "CUADRADO");
-            }
+        cajaApiClient.cerrar(usuario.getId(), montoFinal, observaciones);
+
+        BigDecimal diferencia = montoFinal.subtract(resumen.getEfectivoEsperado());
+        resultado.put("success", true);
+        resultado.put("mensaje", "Caja cerrada correctamente");
+        resultado.put("resumen", resumen);
+        resultado.put("diferencia", diferencia);
+
+        if (diferencia.compareTo(BigDecimal.ZERO) > 0) {
+            resultado.put("tipoDiferencia", "SOBRANTE");
+        } else if (diferencia.compareTo(BigDecimal.ZERO) < 0) {
+            resultado.put("tipoDiferencia", "FALTANTE");
         } else {
-            resultado.put("success", false);
-            resultado.put("error", "No se pudo cerrar la caja");
+            resultado.put("tipoDiferencia", "CUADRADO");
         }
         
         return resultado;
