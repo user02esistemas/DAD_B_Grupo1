@@ -1,6 +1,5 @@
 package controller;
 
-import DAO.SesionCajaDAO;
 import DAO.TransaccionDAO;
 import DTO.SesionCajaDTO;
 import DTO.TransaccionDTO;
@@ -472,8 +471,7 @@ public class VentaController extends HttpServlet {
                 return;
             }
 
-            SesionCajaDAO sesionDAO = new SesionCajaDAO();
-            SesionCajaDTO sesion = sesionDAO.buscarSesionAbierta(usuario.getId());
+            SesionCajaDTO sesion = cajaApiClient.buscarSesionAbierta(usuario.getId());
 
             if (sesion != null) {
                 json.addProperty("success", true);
@@ -511,10 +509,7 @@ public class VentaController extends HttpServlet {
                 return;
             }
 
-            SesionCajaDAO sesionDAO = new SesionCajaDAO();
-            
-            // Verificar que no tenga caja abierta
-            if (sesionDAO.tieneSesionAbierta(usuario.getId())) {
+            if (cajaApiClient.buscarSesionAbierta(usuario.getId()) != null) {
                 json.addProperty("success", false);
                 json.addProperty("message", "Ya tiene una caja abierta");
                 out.print(json.toString());
@@ -524,17 +519,11 @@ public class VentaController extends HttpServlet {
             // Obtener monto inicial
             BigDecimal montoInicial = parseBigDecimal(request.getParameter("montoInicial"));
 
-            // Crear sesión de caja
-            SesionCajaDTO nuevaSesion = new SesionCajaDTO();
-            nuevaSesion.setCajaId(1L); // Caja Principal por defecto
-            nuevaSesion.setUsuarioId(usuario.getId());
-            nuevaSesion.setMontoInicial(montoInicial);
+            SesionCajaDTO nuevaSesion = cajaApiClient.abrir(usuario.getId(), 1L, montoInicial);
 
-            Long sesionId = sesionDAO.abrirSesion(nuevaSesion);
-
-            if (sesionId != null) {
+            if (nuevaSesion != null && nuevaSesion.getId() != null) {
                 json.addProperty("success", true);
-                json.addProperty("sesionId", sesionId);
+                json.addProperty("sesionId", nuevaSesion.getId());
                 json.addProperty("message", "Caja abierta correctamente");
             } else {
                 json.addProperty("success", false);
@@ -566,8 +555,7 @@ public class VentaController extends HttpServlet {
                 return;
             }
 
-            SesionCajaDAO sesionDAO = new SesionCajaDAO();
-            SesionCajaDTO sesion = sesionDAO.buscarSesionAbierta(usuario.getId());
+            SesionCajaDTO sesion = cajaApiClient.buscarSesionAbierta(usuario.getId());
 
             if (sesion == null) {
                 json.addProperty("success", false);
@@ -576,8 +564,7 @@ public class VentaController extends HttpServlet {
                 return;
             }
 
-            // Obtener resumen con totales calculados
-            SesionCajaDTO resumen = sesionDAO.obtenerResumenSesion(sesion.getId());
+            SesionCajaDTO resumen = sesion;
 
             json.addProperty("success", true);
             json.addProperty("sesionId", sesion.getId());
@@ -614,8 +601,7 @@ public class VentaController extends HttpServlet {
                 return;
             }
 
-            SesionCajaDAO sesionDAO = new SesionCajaDAO();
-            SesionCajaDTO sesion = sesionDAO.buscarSesionAbierta(usuario.getId());
+            SesionCajaDTO sesion = cajaApiClient.buscarSesionAbierta(usuario.getId());
 
             if (sesion == null) {
                 json.addProperty("success", false);
@@ -624,37 +610,25 @@ public class VentaController extends HttpServlet {
                 return;
             }
 
-            // Obtener resumen actualizado
-            SesionCajaDTO resumen = sesionDAO.obtenerResumenSesion(sesion.getId());
+            SesionCajaDTO resumen = sesion;
 
             // Obtener monto final contado
             BigDecimal montoFinal = parseBigDecimal(request.getParameter("montoFinal"));
             String observaciones = request.getParameter("observaciones");
 
-            // Preparar cierre
-            resumen.setMontoFinal(montoFinal);
-            resumen.setObservaciones(observaciones);
+            cajaApiClient.cerrar(usuario.getId(), montoFinal, observaciones);
+            BigDecimal diferencia = montoFinal.subtract(resumen.getEfectivoEsperado());
 
-            // Cerrar sesión
-            boolean cerrado = sesionDAO.cerrarSesion(resumen);
+            json.addProperty("success", true);
+            json.addProperty("message", "Caja cerrada correctamente");
+            json.addProperty("diferencia", diferencia);
 
-            if (cerrado) {
-                BigDecimal diferencia = montoFinal.subtract(resumen.getEfectivoEsperado());
-                
-                json.addProperty("success", true);
-                json.addProperty("message", "Caja cerrada correctamente");
-                json.addProperty("diferencia", diferencia);
-                
-                if (diferencia.compareTo(BigDecimal.ZERO) > 0) {
-                    json.addProperty("tipoDiferencia", "SOBRANTE");
-                } else if (diferencia.compareTo(BigDecimal.ZERO) < 0) {
-                    json.addProperty("tipoDiferencia", "FALTANTE");
-                } else {
-                    json.addProperty("tipoDiferencia", "CUADRADO");
-                }
+            if (diferencia.compareTo(BigDecimal.ZERO) > 0) {
+                json.addProperty("tipoDiferencia", "SOBRANTE");
+            } else if (diferencia.compareTo(BigDecimal.ZERO) < 0) {
+                json.addProperty("tipoDiferencia", "FALTANTE");
             } else {
-                json.addProperty("success", false);
-                json.addProperty("message", "No se pudo cerrar la caja");
+                json.addProperty("tipoDiferencia", "CUADRADO");
             }
         } catch (Exception e) {
             json.addProperty("success", false);
