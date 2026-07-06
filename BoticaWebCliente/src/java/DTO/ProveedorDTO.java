@@ -1,8 +1,6 @@
 package DTO;
 
-import DAO.ProveedorDAO;
 import java.sql.Timestamp;
-import java.util.List;
 
 /**
  * DTO para Proveedores
@@ -97,51 +95,4 @@ public class ProveedorDTO {
         this.createdAt = createdAt;
     }
 
-    // =====================================================
-    //              MÉTODOS DE NEGOCIO (DTO)
-    // =====================================================
-
-    public boolean insertar() {
-        Long idGenerado = new ProveedorDAO().insertar(this);
-        if (idGenerado != null) {
-            this.id = idGenerado;
-            return true;
-        }
-        return false;
-    }
-
-    public boolean actualizar() {
-        return new ProveedorDAO().actualizar(this) > 0;
-    }
-
-    public boolean eliminar() {
-        return new ProveedorDAO().eliminar(this.id) > 0;
-    }
-
-    public static ProveedorDTO buscarPorId(Long id) {
-        return new ProveedorDAO().buscarPorId(id);
-    }
-
-    public static ProveedorDTO buscarPorRuc(String ruc) {
-        return new ProveedorDAO().buscarPorRuc(ruc);
-    }
-
-    public static List<ProveedorDTO> listarTodos() {
-        return new ProveedorDAO().listarTodos();
-    }
-
-    public static List<ProveedorDTO> listarActivos() {
-        return new ProveedorDAO().listarActivos();
-    }
-
-    public static boolean existeRuc(String ruc) {
-        return new ProveedorDAO().existeRuc(ruc);
-    }
-
-    /**
-     * Búsqueda para autocomplete de proveedores
-     */
-    public static List<ProveedorDTO> buscarParaAutocomplete(String termino) {
-        return new ProveedorDAO().buscarParaAutocomplete(termino);
-    }
 }

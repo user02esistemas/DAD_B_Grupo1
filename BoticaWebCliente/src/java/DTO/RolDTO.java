@@ -1,7 +1,5 @@
 package DTO;
 
-import DAO.RolDAO;
-import java.util.List;
 
 public class RolDTO {
 
@@ -39,14 +37,5 @@ public class RolDTO {
 
     public void setDescripcion(String descripcion) {
         this.descripcion = descripcion;
-    }
-
-    // MÉTODOS DTO
-    public static List<RolDTO> listarTodos() {
-        return new RolDAO().listarTodos();
-    }
-
-    public static RolDTO buscarPorId(Long id) {
-        return new RolDAO().buscarPorId(id);
     }
 }

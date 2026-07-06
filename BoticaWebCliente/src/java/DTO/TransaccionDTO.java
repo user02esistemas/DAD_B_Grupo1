@@ -1,6 +1,5 @@
 package DTO;
 
-import DAO.TransaccionDAO;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
@@ -214,30 +213,6 @@ public class TransaccionDTO {
         this.detalles = detalles;
     }
 
-    // =====================================================
-    //              MÉTODOS DE NEGOCIO (DTO)
-    // =====================================================
-
-    /**
-     * Registrar transacción completa (cabecera + detalles)
-     */
-    public boolean registrar() {
-        TransaccionDAO dao = new TransaccionDAO();
-        Long idGenerado = dao.registrarTransaccionCompleta(this, this.detalles);
-        if (idGenerado != null) {
-            this.id = idGenerado;
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Buscar transacción por ID
-     */
-    public static TransaccionDTO buscarPorId(Long id) {
-        return new TransaccionDAO().buscarPorId(id);
-    }
-
     // Getters y Setters para campos POS
     public BigDecimal getMontoEfectivo() {
         return montoEfectivo;
@@ -277,69 +252,6 @@ public class TransaccionDTO {
 
     public void setTipoComprobante(String tipoComprobante) {
         this.tipoComprobante = tipoComprobante;
-    }
-
-    /**
-     * Buscar por número de transacción
-     */
-    public static TransaccionDTO buscarPorNumero(String numero) {
-        return new TransaccionDAO().buscarPorNumero(numero);
-    }
-
-    /**
-     * Listar TODAS las transacciones (compras y ventas) - paginado
-     */
-    public static List<TransaccionDTO> listarTodas(int pagina, int porPagina) {
-        return new TransaccionDAO().listarTodas(pagina, porPagina);
-    }
-
-    /**
-     * Buscar transacciones por término
-     */
-    public static List<TransaccionDTO> buscar(String termino, int pagina, int porPagina) {
-        return new TransaccionDAO().buscar(termino, pagina, porPagina);
-    }
-
-    /**
-     * Contar total de transacciones
-     */
-    public static int contarTodas() {
-        return new TransaccionDAO().contarTodas();
-    }
-
-    /**
-     * Contar transacciones por búsqueda
-     */
-    public static int contarBusqueda(String termino) {
-        return new TransaccionDAO().contarBusqueda(termino);
-    }
-
-    /**
-     * Listar compras (paginado)
-     */
-    public static List<TransaccionDTO> listarCompras(int pagina, int porPagina) {
-        return new TransaccionDAO().listarPorTipo(TIPO_COMPRA, pagina, porPagina);
-    }
-
-    /**
-     * Listar ventas (paginado)
-     */
-    public static List<TransaccionDTO> listarVentas(int pagina, int porPagina) {
-        return new TransaccionDAO().listarPorTipo(TIPO_VENTA, pagina, porPagina);
-    }
-
-    /**
-     * Generar número de transacción único
-     */
-    public static String generarNumeroTransaccion(Long tipoTransaccionId) {
-        return new TransaccionDAO().generarNumeroTransaccion(tipoTransaccionId);
-    }
-
-    /**
-     * Anular transacción
-     */
-    public boolean anular() {
-        return new TransaccionDAO().anular(this.id) > 0;
     }
 
     /**
