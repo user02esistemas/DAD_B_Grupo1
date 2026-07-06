@@ -11,6 +11,8 @@ import DTO.UsuarioDTO;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import integration.api.CajaApiClient;
+import integration.api.VentaApiClient;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -42,6 +44,8 @@ import java.util.List;
 public class VentaController extends HttpServlet {
 
     private final Gson gson = new Gson();
+    private final CajaApiClient cajaApiClient = new CajaApiClient();
+    private final VentaApiClient ventaApiClient = new VentaApiClient();
     private static final BigDecimal FACTOR_IGV = new BigDecimal("1.18");
 
     @Override
@@ -283,8 +287,7 @@ public class VentaController extends HttpServlet {
             }
 
             // Verificar sesión de caja
-            SesionCajaDAO sesionDAO = new SesionCajaDAO();
-            SesionCajaDTO sesionCaja = sesionDAO.buscarSesionAbierta(usuario.getId());
+            SesionCajaDTO sesionCaja = cajaApiClient.buscarSesionAbierta(usuario.getId());
 
             if (sesionCaja == null) {
                 json.addProperty("success", false);
@@ -372,44 +375,26 @@ public class VentaController extends HttpServlet {
                 metodoPago = "EFECTIVO";
             }
 
-            // Crear transacción
-            TransaccionDTO transaccion = new TransaccionDTO();
-            transaccion.setTipoTransaccionId(2L); // VENTA
-            transaccion.setUsuarioId(usuario.getId());
-            transaccion.setSesionCajaId(sesionCaja.getId());
-            transaccion.setNombrePersona(cliente != null && !cliente.isEmpty() ? cliente : "CLIENTES VARIOS");
-            transaccion.setSubtotal(subtotal);
-            transaccion.setIgv(igv);
-            transaccion.setTotal(total);
-            transaccion.setMetodoPago(metodoPago);
-            transaccion.setMontoEfectivo(montoEfectivo);
-            transaccion.setMontoVirtual(montoVirtual);
-            transaccion.setMedioPagoVirtual(medioPagoVirtual != null && !medioPagoVirtual.isEmpty() ? medioPagoVirtual : null);
-            transaccion.setVuelto(vuelto);
-            transaccion.setTipoComprobante(tipoComprobante != null ? tipoComprobante : "NOTA_VENTA");
-            transaccion.setEstado("COMPLETADA");
-            transaccion.setDetalles(detalles);
+            JsonObject registrada = ventaApiClient.registrarVenta(
+                    usuario.getId(),
+                    cliente != null && !cliente.isEmpty() ? cliente : "CLIENTES VARIOS",
+                    metodoPago,
+                    tipoComprobante != null ? tipoComprobante : "NOTA_VENTA",
+                    montoEfectivo,
+                    montoVirtual,
+                    medioPagoVirtual != null && !medioPagoVirtual.isEmpty() ? medioPagoVirtual : null,
+                    vuelto,
+                    detalles);
 
-            // Guardar transacción
-            TransaccionDAO transaccionDAO = new TransaccionDAO();
-            Long transaccionId = transaccionDAO.insertarVenta(transaccion);
-
-            if (transaccionId != null) {
-                transaccion.setId(transaccionId);
-
-                json.addProperty("success", true);
-                json.addProperty("transaccionId", transaccionId);
-                json.addProperty("numeroTransaccion", transaccion.getNumeroTransaccion());
-                json.addProperty("subtotal", subtotal.toString());
-                json.addProperty("igv", igv.toString());
-                json.addProperty("total", total.toString());
-                json.addProperty("vuelto", vuelto.toString());
-                json.addProperty("metodoPago", metodoPago);
-                json.addProperty("message", "Venta procesada correctamente");
-            } else {
-                json.addProperty("success", false);
-                json.addProperty("message", "Error al procesar la venta");
-            }
+            json.addProperty("success", true);
+            json.addProperty("transaccionId", getLong(registrada, "id"));
+            json.addProperty("numeroTransaccion", getString(registrada, "numeroTransaccion"));
+            json.addProperty("subtotal", subtotal.toString());
+            json.addProperty("igv", igv.toString());
+            json.addProperty("total", total.toString());
+            json.addProperty("vuelto", vuelto.toString());
+            json.addProperty("metodoPago", metodoPago);
+            json.addProperty("message", "Venta procesada correctamente");
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -445,6 +430,18 @@ public class VentaController extends HttpServlet {
         } catch (NumberFormatException e) {
             return BigDecimal.ZERO;
         }
+    }
+
+    private Long getLong(JsonObject object, String key) {
+        return object != null && object.has(key) && !object.get(key).isJsonNull()
+                ? object.get(key).getAsLong()
+                : null;
+    }
+
+    private String getString(JsonObject object, String key) {
+        return object != null && object.has(key) && !object.get(key).isJsonNull()
+                ? object.get(key).getAsString()
+                : null;
     }
 
     private void enviarError(HttpServletResponse response, String mensaje) throws IOException {
