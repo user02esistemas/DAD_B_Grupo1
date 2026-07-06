@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 import rmi.dto.SesionCajaDTO;
 import rmi.ventas.VentaServiceRMI;
 
-@WebServlet(name = "CajaApiServlet", urlPatterns = {"/api/caja/estado", "/api/caja/sesiones", "/api/caja/abrir", "/api/caja/cerrar"})
+@WebServlet(name = "CajaApiServlet", urlPatterns = {"/api/caja/estado", "/api/caja/sesiones", "/api/caja/resumen", "/api/caja/disponibles", "/api/caja/abrir", "/api/caja/cerrar"})
 public class CajaApiServlet extends HttpServlet {
 
     private final Gson gson = new Gson();
@@ -31,6 +31,22 @@ public class CajaApiServlet extends HttpServlet {
                 int limite = parseInt(request.getParameter("limite"), 2);
                 response.getWriter().write(gson.toJson(ApiResponse.ok(
                         "Sesiones de caja", ventaService.listarUltimasSesionesCaja(limite))));
+                return;
+            }
+            if (request.getServletPath().endsWith("/disponibles")) {
+                response.getWriter().write(gson.toJson(ApiResponse.ok(
+                        "Cajas disponibles", ventaService.listarCajasDisponibles())));
+                return;
+            }
+            if (request.getServletPath().endsWith("/resumen")) {
+                Long sesionId = parseLong(request.getParameter("sesionId"));
+                if (sesionId == null) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    response.getWriter().write(gson.toJson(ApiResponse.error("Sesion requerida")));
+                    return;
+                }
+                response.getWriter().write(gson.toJson(ApiResponse.ok(
+                        "Resumen de caja", ventaService.obtenerResumenSesionCaja(sesionId))));
                 return;
             }
             Long usuarioId = parseLong(request.getParameter("usuarioId"));

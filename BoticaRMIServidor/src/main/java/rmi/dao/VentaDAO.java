@@ -10,6 +10,8 @@ import java.sql.Types;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import rmi.config.DatabaseConfig;
 import rmi.dto.DetalleTransaccionDTO;
 import rmi.dto.SesionCajaDTO;
@@ -194,6 +196,7 @@ public class VentaDAO {
     public SesionCajaDTO obtenerResumenSesion(Long sesionId) {
         String sql = "SELECT COALESCE(SUM(total), 0) AS total_transacciones, "
                 + "COALESCE(SUM(monto_efectivo), 0) AS efectivo, "
+                + "COALESCE(SUM(vuelto), 0) AS vueltos, "
                 + "COALESCE(SUM(monto_virtual), 0) AS virtual "
                 + "FROM transacciones WHERE sesion_caja_id = ? AND tipo_transaccion_id = 2 AND estado = 'COMPLETADA'";
         try (Connection con = DatabaseConfig.getConnection();
@@ -207,14 +210,40 @@ public class VentaDAO {
                 if (rs.next()) {
                     sesion.setTotalTransacciones(rs.getBigDecimal("total_transacciones"));
                     sesion.setTotalVentasEfectivo(rs.getBigDecimal("efectivo"));
+                    sesion.setTotalVueltos(rs.getBigDecimal("vueltos"));
                     sesion.setTotalVentasVirtual(rs.getBigDecimal("virtual"));
-                    sesion.setEfectivoEsperado(sesion.getMontoInicial().add(sesion.getTotalVentasEfectivo()));
+                    sesion.setEfectivoEsperado(sesion.getMontoInicial()
+                            .add(sesion.getTotalVentasEfectivo())
+                            .subtract(sesion.getTotalVueltos()));
                 }
             }
             return sesion;
         } catch (SQLException ex) {
             throw new IllegalStateException("Error al obtener resumen de caja", ex);
         }
+    }
+
+    public List<Map<String, Object>> listarCajasDisponibles() {
+        String sql = "SELECT c.id, c.nombre, c.descripcion "
+                + "FROM cajas c "
+                + "WHERE c.activo = 1 "
+                + "AND c.id NOT IN (SELECT caja_id FROM sesiones_caja WHERE estado = 'ABIERTA') "
+                + "ORDER BY c.nombre";
+        List<Map<String, Object>> cajas = new ArrayList<>();
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Map<String, Object> caja = new HashMap<>();
+                caja.put("id", rs.getLong("id"));
+                caja.put("nombre", rs.getString("nombre"));
+                caja.put("ubicacion", rs.getString("descripcion"));
+                cajas.add(caja);
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al listar cajas disponibles", ex);
+        }
+        return cajas;
     }
 
     private void prepararVenta(Connection con, TransaccionDTO venta, List<DetalleTransaccionDTO> detalles) throws SQLException {

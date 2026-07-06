@@ -3,6 +3,7 @@ package rmi.services.ventas;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
+import java.util.Map;
 import rmi.dao.VentaDAO;
 import rmi.dto.DetalleTransaccionDTO;
 import rmi.dto.SesionCajaDTO;
@@ -81,5 +82,15 @@ public class VentaServiceImpl extends UnicastRemoteObject implements VentaServic
     @Override
     public List<SesionCajaDTO> listarUltimasSesionesCaja(int limite) throws RemoteException {
         return ventaDAO.listarUltimasSesionesCaja(limite);
+    }
+
+    @Override
+    public SesionCajaDTO obtenerResumenSesionCaja(Long sesionId) throws RemoteException {
+        return ventaDAO.obtenerResumenSesion(sesionId);
+    }
+
+    @Override
+    public List<Map<String, Object>> listarCajasDisponibles() throws RemoteException {
+        return ventaDAO.listarCajasDisponibles();
     }
 }

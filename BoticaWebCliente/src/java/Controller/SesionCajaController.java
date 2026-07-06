@@ -1,7 +1,5 @@
 package controller;
 
-import DAO.SesionCajaDAO;
-import DAO.DashboardDAO;
 import DTO.SesionCajaDTO;
 import DTO.UsuarioDTO;
 import com.google.gson.Gson;
@@ -26,8 +24,6 @@ import java.util.Map;
 @WebServlet(name = "SesionCajaController", urlPatterns = {"/SesionCajaController"})
 public class SesionCajaController extends HttpServlet {
 
-    private final SesionCajaDAO sesionCajaDAO = new SesionCajaDAO();
-    private final DashboardDAO dashboardDAO = new DashboardDAO();
     private final CajaApiClient cajaApiClient = new CajaApiClient();
     private final Gson gson = new Gson();
 
@@ -59,14 +55,14 @@ public class SesionCajaController extends HttpServlet {
                 case "resumen":
                     Long sesionId = getLongParam(request, "sesionId", null);
                     if (sesionId != null) {
-                        SesionCajaDTO resumen = sesionCajaDAO.obtenerResumenSesion(sesionId);
+                        SesionCajaDTO resumen = cajaApiClient.obtenerResumen(sesionId);
                         out.print(gson.toJson(resumen));
                     } else {
                         out.print("{\"error\": \"ID de sesión requerido\"}");
                     }
                     break;
                 case "cajasDisponibles":
-                    out.print(gson.toJson(dashboardDAO.obtenerCajasDisponibles()));
+                    out.print(gson.toJson(cajaApiClient.listarCajasDisponibles()));
                     break;
                 default:
                     response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -159,7 +155,7 @@ public class SesionCajaController extends HttpServlet {
             resultado.put("sesion", sesion);
             
             // Obtener resumen de ventas del turno
-            SesionCajaDTO resumen = sesionCajaDAO.obtenerResumenSesion(sesion.getId());
+            SesionCajaDTO resumen = cajaApiClient.obtenerResumen(sesion.getId());
             if (resumen != null) {
                 resultado.put("totalVentas", resumen.getTotalTransacciones());
                 resultado.put("efectivoNeto", resumen.getTotalVentasEfectivo());
@@ -168,7 +164,7 @@ public class SesionCajaController extends HttpServlet {
             }
         } else {
             resultado.put("tieneCajaAbierta", false);
-            resultado.put("cajasDisponibles", dashboardDAO.obtenerCajasDisponibles());
+            resultado.put("cajasDisponibles", cajaApiClient.listarCajasDisponibles());
         }
         
         return resultado;
@@ -222,7 +218,7 @@ public class SesionCajaController extends HttpServlet {
         }
         
         // Obtener resumen para cálculos
-        SesionCajaDTO resumen = sesionCajaDAO.obtenerResumenSesion(sesionActiva.getId());
+        SesionCajaDTO resumen = cajaApiClient.obtenerResumen(sesionActiva.getId());
         
         // Obtener parámetros
         BigDecimal montoFinal = getBigDecimalParam(request, "montoFinal", BigDecimal.ZERO);

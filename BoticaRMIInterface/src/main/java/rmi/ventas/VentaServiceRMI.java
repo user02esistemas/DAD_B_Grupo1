@@ -6,6 +6,7 @@ import rmi.dto.TransaccionDTO;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.List;
+import java.util.Map;
 
 public interface VentaServiceRMI extends Remote {
 
@@ -37,4 +38,8 @@ public interface VentaServiceRMI extends Remote {
     boolean tieneSesionAbierta(Long usuarioId) throws RemoteException;
 
     List<SesionCajaDTO> listarUltimasSesionesCaja(int limite) throws RemoteException;
+
+    SesionCajaDTO obtenerResumenSesionCaja(Long sesionId) throws RemoteException;
+
+    List<Map<String, Object>> listarCajasDisponibles() throws RemoteException;
 }
