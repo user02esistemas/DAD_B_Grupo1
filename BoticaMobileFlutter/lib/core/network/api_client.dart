@@ -5,11 +5,13 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 
 class ApiClient {
-  ApiClient({http.Client? httpClient}) : _httpClient = httpClient ?? http.Client();
+  ApiClient({http.Client? httpClient})
+      : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
 
-  Future<ApiResult> get(String path, [Map<String, String?> query = const {}]) async {
+  Future<ApiResult> get(String path,
+      [Map<String, String?> query = const {}]) async {
     final response = await _httpClient.get(_uri(path, query));
     return _parse(response);
   }
@@ -54,7 +56,19 @@ class ApiClient {
   }
 
   ApiResult _parse(http.Response response) {
-    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    final Map<String, dynamic> decoded;
+    try {
+      decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    } on FormatException {
+      return ApiResult(
+        success: false,
+        statusCode: response.statusCode,
+        message: response.statusCode == 404
+            ? 'No se encontro el servicio. Verifique la direccion del servidor.'
+            : 'El servidor devolvio una respuesta no valida.',
+        data: null,
+      );
+    }
     final success = decoded['success'] == true && response.statusCode < 400;
     return ApiResult(
       success: success,

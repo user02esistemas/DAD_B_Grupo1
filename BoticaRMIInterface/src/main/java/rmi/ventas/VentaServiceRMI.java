@@ -35,4 +35,6 @@ public interface VentaServiceRMI extends Remote {
     SesionCajaDTO buscarSesionAbierta(Long usuarioId) throws RemoteException;
 
     boolean tieneSesionAbierta(Long usuarioId) throws RemoteException;
+
+    List<SesionCajaDTO> listarUltimasSesionesCaja(int limite) throws RemoteException;
 }

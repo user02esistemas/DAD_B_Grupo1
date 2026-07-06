@@ -59,21 +59,27 @@ public class VentaServiceImpl extends UnicastRemoteObject implements VentaServic
 
     @Override
     public Long abrirSesionCaja(SesionCajaDTO sesion) throws RemoteException {
-        throw new UnsupportedOperationException("Sesion de caja pendiente");
+        return ventaDAO.abrirSesionCaja(sesion);
     }
 
     @Override
     public boolean cerrarSesionCaja(SesionCajaDTO sesion) throws RemoteException {
-        throw new UnsupportedOperationException("Sesion de caja pendiente");
+        return ventaDAO.cerrarSesionCaja(sesion);
     }
 
     @Override
     public SesionCajaDTO buscarSesionAbierta(Long usuarioId) throws RemoteException {
-        throw new UnsupportedOperationException("Sesion de caja pendiente");
+        SesionCajaDTO sesion = ventaDAO.buscarSesionAbierta(usuarioId);
+        return sesion == null ? null : ventaDAO.obtenerResumenSesion(sesion.getId());
     }
 
     @Override
     public boolean tieneSesionAbierta(Long usuarioId) throws RemoteException {
-        throw new UnsupportedOperationException("Sesion de caja pendiente");
+        return ventaDAO.tieneSesionAbierta(usuarioId);
+    }
+
+    @Override
+    public List<SesionCajaDTO> listarUltimasSesionesCaja(int limite) throws RemoteException {
+        return ventaDAO.listarUltimasSesionesCaja(limite);
     }
 }

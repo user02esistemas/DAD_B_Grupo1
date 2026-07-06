@@ -17,8 +17,8 @@ class ProductService {
     }
 
     return (result.data! as List)
-        .whereType<Map<String, dynamic>>()
-        .map(Product.fromJson)
+        .whereType<Map>()
+        .map((json) => Product.fromJson(Map<String, dynamic>.from(json)))
         .toList();
   }
 }
