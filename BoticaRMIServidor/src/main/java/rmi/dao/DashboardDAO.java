@@ -10,6 +10,9 @@ import java.util.List;
 import rmi.config.DatabaseConfig;
 import rmi.dto.DashboardResumenDTO;
 import rmi.dto.ProductoAlertaDTO;
+import rmi.dto.ProductoVendidoDTO;
+import rmi.dto.UltimaVentaDTO;
+import rmi.dto.VentaDiaDTO;
 
 public class DashboardDAO {
 
@@ -24,7 +27,95 @@ public class DashboardDAO {
         resumen.setAgotados(obtenerEntero("SELECT COUNT(*) FROM productos WHERE stock_actual = 0 AND activo = 1"));
         resumen.setPorVencer(obtenerEntero("SELECT COUNT(*) FROM productos WHERE fecha_vencimiento BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) AND activo = 1"));
         resumen.setVencidos(obtenerEntero("SELECT COUNT(*) FROM productos WHERE fecha_vencimiento < CURDATE() AND activo = 1"));
+        resumen.setTopProductos(obtenerTopProductosVendidos(5, false));
+        resumen.setTopProductosMes(obtenerTopProductosVendidos(5, true));
+        resumen.setVentasSemana(obtenerVentasUltimos7Dias());
+        resumen.setUltimasVentas(obtenerUltimasVentas(5));
         return resumen;
+    }
+
+    private List<ProductoVendidoDTO> obtenerTopProductosVendidos(int limite, boolean soloMesActual) {
+        String sql = "SELECT c.nombre_comercial, c.concentracion, SUM(dt.cantidad) AS cantidad_vendida, "
+                + "SUM(dt.subtotal) AS total_vendido "
+                + "FROM detalle_transacciones dt "
+                + "INNER JOIN transacciones t ON dt.transaccion_id = t.id "
+                + "INNER JOIN productos p ON dt.producto_id = p.id "
+                + "INNER JOIN catalogo_productos_digemid c ON p.catalogo_producto_id = c.id "
+                + "WHERE t.tipo_transaccion_id = 2 AND t.estado = 'COMPLETADA' "
+                + (soloMesActual ? "AND MONTH(t.fecha) = MONTH(CURDATE()) AND YEAR(t.fecha) = YEAR(CURDATE()) " : "")
+                + "GROUP BY p.catalogo_producto_id, c.nombre_comercial, c.concentracion "
+                + "ORDER BY cantidad_vendida DESC LIMIT ?";
+        List<ProductoVendidoDTO> productos = new ArrayList<>();
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, limite <= 0 ? 5 : limite);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    ProductoVendidoDTO producto = new ProductoVendidoDTO();
+                    producto.setNombreProducto(nombreProducto(rs.getString("nombre_comercial"), rs.getString("concentracion"), soloMesActual ? 25 : 30));
+                    producto.setCantidadVendida(rs.getInt("cantidad_vendida"));
+                    producto.setTotalVendido(rs.getBigDecimal("total_vendido"));
+                    productos.add(producto);
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al obtener top productos", ex);
+        }
+        return productos;
+    }
+
+    private List<VentaDiaDTO> obtenerVentasUltimos7Dias() {
+        String sql = "SELECT DATE(fecha) AS dia, COALESCE(SUM(total), 0) AS total_ventas, COUNT(*) AS cantidad "
+                + "FROM transacciones "
+                + "WHERE tipo_transaccion_id = 2 AND estado = 'COMPLETADA' "
+                + "AND fecha >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) "
+                + "GROUP BY DATE(fecha) ORDER BY dia ASC";
+        List<VentaDiaDTO> ventas = new ArrayList<>();
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                ventas.add(new VentaDiaDTO(String.valueOf(rs.getDate("dia")), rs.getBigDecimal("total_ventas"), rs.getInt("cantidad")));
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al obtener ventas semanales", ex);
+        }
+        return ventas;
+    }
+
+    private List<UltimaVentaDTO> obtenerUltimasVentas(int limite) {
+        String sql = "SELECT t.numero_transaccion, t.fecha, t.total, t.metodo_pago, u.nombre_completo AS usuario "
+                + "FROM transacciones t "
+                + "INNER JOIN usuarios u ON t.usuario_id = u.id "
+                + "WHERE t.tipo_transaccion_id = 2 AND t.estado = 'COMPLETADA' "
+                + "ORDER BY t.fecha DESC LIMIT ?";
+        List<UltimaVentaDTO> ventas = new ArrayList<>();
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, limite <= 0 ? 5 : limite);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    UltimaVentaDTO venta = new UltimaVentaDTO();
+                    venta.setNumeroTransaccion(rs.getString("numero_transaccion"));
+                    venta.setFecha(String.valueOf(rs.getTimestamp("fecha")));
+                    venta.setTotal(rs.getBigDecimal("total"));
+                    venta.setMetodoPago(rs.getString("metodo_pago"));
+                    venta.setVendedor(rs.getString("usuario"));
+                    ventas.add(venta);
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al obtener ultimas ventas", ex);
+        }
+        return ventas;
+    }
+
+    private String nombreProducto(String nombre, String concentracion, int maxLength) {
+        String resultado = nombre == null ? "" : nombre;
+        if (concentracion != null && !concentracion.isEmpty()) {
+            resultado += " " + concentracion;
+        }
+        return resultado.length() > maxLength ? resultado.substring(0, maxLength - 3) + "..." : resultado;
     }
 
     public List<ProductoAlertaDTO> obtenerProductosStockBajo(int limite) {

@@ -1,7 +1,7 @@
 package integration.api;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import integration.api.WebApiClient.ApiResult;
 import java.io.IOException;
@@ -23,16 +23,62 @@ public class DashboardApiClient {
         if (data == null || data.isJsonNull()) {
             return new JsonObject();
         }
+        normalizarResumen(data);
         return data;
     }
 
-    public JsonArray obtenerProductosStockBajo(int limite) throws IOException {
+    private void normalizarResumen(JsonObject data) {
+        normalizarProductos(data, "topProductos");
+        normalizarProductos(data, "topProductosMes");
+        normalizarUltimasVentas(data);
+    }
+
+    private void normalizarProductos(JsonObject data, String key) {
+        if (!data.has(key) || !data.get(key).isJsonArray()) {
+            return;
+        }
+        JsonArray normalizados = new JsonArray();
+        for (JsonElement element : data.getAsJsonArray(key)) {
+            if (!element.isJsonObject()) {
+                continue;
+            }
+            JsonObject item = element.getAsJsonObject();
+            JsonObject producto = new JsonObject();
+            producto.addProperty("nombre", getString(item, "nombreProducto"));
+            producto.addProperty("cantidad", getInt(item, "cantidadVendida"));
+            producto.add("total", item.has("totalVendido") ? item.get("totalVendido") : null);
+            normalizados.add(producto);
+        }
+        data.add(key, normalizados);
+    }
+
+    private void normalizarUltimasVentas(JsonObject data) {
+        if (!data.has("ultimasVentas") || !data.get("ultimasVentas").isJsonArray()) {
+            return;
+        }
+        JsonArray normalizadas = new JsonArray();
+        for (JsonElement element : data.getAsJsonArray("ultimasVentas")) {
+            if (!element.isJsonObject()) {
+                continue;
+            }
+            JsonObject item = element.getAsJsonObject();
+            JsonObject venta = new JsonObject();
+            venta.addProperty("numero", getString(item, "numeroTransaccion"));
+            venta.add("fecha", item.has("fecha") ? item.get("fecha") : null);
+            venta.add("total", item.has("total") ? item.get("total") : null);
+            venta.addProperty("metodoPago", getString(item, "metodoPago"));
+            venta.addProperty("usuario", getString(item, "vendedor"));
+            normalizadas.add(venta);
+        }
+        data.add("ultimasVentas", normalizadas);
+    }
+
+    public List<Map<String, Object>> obtenerProductosStockBajo(int limite) throws IOException {
         ApiResult result = apiClient.get("/api/dashboard/productos-alerta?limite=" + limite);
         if (!result.isSuccess()) {
             throw new IOException(result.getMessage());
         }
-        JsonElement data = result.getJson().get("data");
-        return data != null && data.isJsonArray() ? data.getAsJsonArray() : new JsonArray();
+        return toProductosAlerta(result.getJson().get("data"), true);
     }
 
     public List<Map<String, Object>> obtenerProductosPorVencer(int limite) throws IOException {
@@ -40,8 +86,11 @@ public class DashboardApiClient {
         if (!result.isSuccess()) {
             throw new IOException(result.getMessage());
         }
+        return toProductosAlerta(result.getJson().get("data"), false);
+    }
+
+    private List<Map<String, Object>> toProductosAlerta(JsonElement data, boolean incluirStockMinimo) {
         List<Map<String, Object>> productos = new ArrayList<>();
-        JsonElement data = result.getJson().get("data");
         if (data == null || !data.isJsonArray()) {
             return productos;
         }
@@ -53,9 +102,13 @@ public class DashboardApiClient {
             Map<String, Object> producto = new HashMap<>();
             producto.put("nombre", getString(item, "nombreProducto"));
             producto.put("lote", getString(item, "lote"));
-            producto.put("fechaVencimiento", getString(item, "fechaVencimiento"));
             producto.put("stockActual", getInt(item, "stockActual"));
-            producto.put("diasRestantes", getInt(item, "diasParaVencer"));
+            if (incluirStockMinimo) {
+                producto.put("stockMinimo", getInt(item, "stockMinimo"));
+            } else {
+                producto.put("fechaVencimiento", getString(item, "fechaVencimiento"));
+                producto.put("diasRestantes", getInt(item, "diasParaVencer"));
+            }
             productos.add(producto);
         }
         return productos;

@@ -14,7 +14,6 @@ import integration.api.CajaApiClient;
 import integration.api.DashboardApiClient;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,22 +47,19 @@ public class DashboardController extends HttpServlet {
         try {
             switch (action) {
                 case "resumen":
-                    out.print(gson.toJson(obtenerResumenApiCombinado()));
+                    out.print(gson.toJson(dashboardApiClient.obtenerResumen()));
                     break;
                 case "topProductos":
-                    int limite = getIntParam(request, "limite", 5);
-                    out.print(gson.toJson(dashboardDAO.obtenerTopProductosVendidos(limite)));
+                    out.print(gson.toJson(dashboardApiClient.obtenerResumen().getAsJsonArray("topProductos")));
                     break;
                 case "topProductosMes":
-                    int limiteMes = getIntParam(request, "limite", 5);
-                    out.print(gson.toJson(dashboardDAO.obtenerTopProductosMes(limiteMes)));
+                    out.print(gson.toJson(dashboardApiClient.obtenerResumen().getAsJsonArray("topProductosMes")));
                     break;
                 case "ventasSemana":
-                    out.print(gson.toJson(dashboardDAO.obtenerVentasUltimos7Dias()));
+                    out.print(gson.toJson(dashboardApiClient.obtenerResumen().getAsJsonArray("ventasSemana")));
                     break;
                 case "ultimasVentas":
-                    int limiteVentas = getIntParam(request, "limite", 5);
-                    out.print(gson.toJson(dashboardDAO.obtenerUltimasVentas(limiteVentas)));
+                    out.print(gson.toJson(dashboardApiClient.obtenerResumen().getAsJsonArray("ultimasVentas")));
                     break;
                 case "productosStockBajo":
                     int limiteStock = getIntParam(request, "limite", 5);
@@ -116,71 +112,23 @@ public class DashboardController extends HttpServlet {
         }
     }
 
-    private JsonObject obtenerResumenApiCombinado() throws IOException {
-        JsonObject resumen = dashboardApiClient.obtenerResumen();
-        // La API central ya entrega las métricas; estas listas quedan como
-        // compatibilidad temporal hasta exponer endpoints equivalentes.
-        if (!resumen.has("topProductos")) {
-            resumen.add("topProductos", gson.toJsonTree(dashboardDAO.obtenerTopProductosVendidos(5)));
-        }
-        if (!resumen.has("topProductosMes")) {
-            resumen.add("topProductosMes", gson.toJsonTree(dashboardDAO.obtenerTopProductosMes(5)));
-        }
-        if (!resumen.has("ventasSemana")) {
-            resumen.add("ventasSemana", gson.toJsonTree(dashboardDAO.obtenerVentasUltimos7Dias()));
-        }
-        if (!resumen.has("ultimasVentas")) {
-            resumen.add("ultimasVentas", gson.toJsonTree(dashboardDAO.obtenerUltimasVentas(5)));
-        }
-        return resumen;
-    }
-    
-    /**
-     * Obtener resumen general del dashboard
-     */
-    private Map<String, Object> obtenerResumen() {
-        Map<String, Object> resumen = new HashMap<>();
-        
-        // Ventas
-        resumen.put("ventasHoy", dashboardDAO.obtenerVentasDelDia());
-        resumen.put("cantidadVentasHoy", dashboardDAO.obtenerCantidadVentasDelDia());
-        resumen.put("ventasMes", dashboardDAO.obtenerVentasDelMes());
-        
-        // Compras
-        resumen.put("comprasHoy", dashboardDAO.obtenerComprasDelDia());
-        
-        // Inventario
-        resumen.put("totalProductos", dashboardDAO.contarTotalProductos());
-        resumen.put("stockBajo", dashboardDAO.contarProductosStockBajo());
-        resumen.put("agotados", dashboardDAO.contarProductosAgotados());
-        resumen.put("porVencer", dashboardDAO.contarProductosPorVencer());
-        resumen.put("vencidos", dashboardDAO.contarProductosVencidos());
-        
-        // Top productos
-        resumen.put("topProductos", dashboardDAO.obtenerTopProductosVendidos(5));
-        resumen.put("topProductosMes", dashboardDAO.obtenerTopProductosMes(5));
-        
-        // Ventas semana
-        resumen.put("ventasSemana", dashboardDAO.obtenerVentasUltimos7Dias());
-        
-        // Últimas ventas
-        resumen.put("ultimasVentas", dashboardDAO.obtenerUltimasVentas(5));
-        
-        return resumen;
-    }
-    
     /**
      * Obtener solo alertas
      */
     private Map<String, Object> obtenerAlertas() throws IOException {
         Map<String, Object> alertas = new HashMap<>();
-        alertas.put("stockBajo", dashboardDAO.contarProductosStockBajo());
-        alertas.put("agotados", dashboardDAO.contarProductosAgotados());
-        alertas.put("porVencer", dashboardDAO.contarProductosPorVencer());
-        alertas.put("vencidos", dashboardDAO.contarProductosVencidos());
-        alertas.put("productosStockBajo", dashboardDAO.obtenerProductosStockBajo(5));
+        JsonObject resumen = dashboardApiClient.obtenerResumen();
+        alertas.put("stockBajo", getInt(resumen, "stockBajo"));
+        alertas.put("agotados", getInt(resumen, "agotados"));
+        alertas.put("porVencer", getInt(resumen, "porVencer"));
+        alertas.put("vencidos", getInt(resumen, "vencidos"));
+        alertas.put("productosStockBajo", dashboardApiClient.obtenerProductosStockBajo(5));
         alertas.put("productosPorVencer", dashboardApiClient.obtenerProductosPorVencer(5));
         return alertas;
+    }
+
+    private int getInt(JsonObject object, String key) {
+        return object.has(key) && !object.get(key).isJsonNull() ? object.get(key).getAsInt() : 0;
     }
     
     // =====================================================

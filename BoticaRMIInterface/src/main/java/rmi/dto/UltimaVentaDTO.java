@@ -11,6 +11,7 @@ public class UltimaVentaDTO implements Serializable {
     private String cliente;
     private BigDecimal total;
     private String fecha;
+    private String metodoPago;
     private String vendedor;
 
     public UltimaVentaDTO() {}
@@ -26,6 +27,9 @@ public class UltimaVentaDTO implements Serializable {
 
     public String getFecha() { return fecha; }
     public void setFecha(String fecha) { this.fecha = fecha; }
+
+    public String getMetodoPago() { return metodoPago; }
+    public void setMetodoPago(String metodoPago) { this.metodoPago = metodoPago; }
 
     public String getVendedor() { return vendedor; }
     public void setVendedor(String vendedor) { this.vendedor = vendedor; }
