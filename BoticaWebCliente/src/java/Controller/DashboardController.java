@@ -71,7 +71,7 @@ public class DashboardController extends HttpServlet {
                     break;
                 case "productosPorVencer":
                     int limiteVencer = getIntParam(request, "limite", 5);
-                    out.print(gson.toJson(dashboardDAO.obtenerProductosPorVencer(limiteVencer)));
+                    out.print(gson.toJson(dashboardApiClient.obtenerProductosPorVencer(limiteVencer)));
                     break;
                 case "alertas":
                     out.print(gson.toJson(obtenerAlertas()));
@@ -172,14 +172,14 @@ public class DashboardController extends HttpServlet {
     /**
      * Obtener solo alertas
      */
-    private Map<String, Object> obtenerAlertas() {
+    private Map<String, Object> obtenerAlertas() throws IOException {
         Map<String, Object> alertas = new HashMap<>();
         alertas.put("stockBajo", dashboardDAO.contarProductosStockBajo());
         alertas.put("agotados", dashboardDAO.contarProductosAgotados());
         alertas.put("porVencer", dashboardDAO.contarProductosPorVencer());
         alertas.put("vencidos", dashboardDAO.contarProductosVencidos());
         alertas.put("productosStockBajo", dashboardDAO.obtenerProductosStockBajo(5));
-        alertas.put("productosPorVencer", dashboardDAO.obtenerProductosPorVencer(5));
+        alertas.put("productosPorVencer", dashboardApiClient.obtenerProductosPorVencer(5));
         return alertas;
     }
     
@@ -222,7 +222,7 @@ public class DashboardController extends HttpServlet {
         resultado.put("porVencer", dashboardDAO.contarProductosPorVencer());
         resultado.put("vencidos", dashboardDAO.contarProductosVencidos());
         resultado.put("productosStockBajo", dashboardDAO.obtenerProductosStockBajo(5));
-        resultado.put("productosPorVencer", dashboardDAO.obtenerProductosPorVencer(5));
+        resultado.put("productosPorVencer", dashboardApiClient.obtenerProductosPorVencer(5));
         
         // Cajas disponibles (para apertura)
         resultado.put("cajasDisponibles", cajaApiClient.listarCajasDisponibles());

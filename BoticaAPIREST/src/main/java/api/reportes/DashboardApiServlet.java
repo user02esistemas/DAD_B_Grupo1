@@ -16,7 +16,8 @@ import rmi.reportes.DashboardServiceRMI;
 
 @WebServlet(name = "DashboardApiServlet", urlPatterns = {
     "/api/dashboard/resumen",
-    "/api/dashboard/productos-alerta"
+    "/api/dashboard/productos-alerta",
+    "/api/dashboard/productos-vencer"
 })
 public class DashboardApiServlet extends HttpServlet {
 
@@ -37,6 +38,14 @@ public class DashboardApiServlet extends HttpServlet {
                 List<ProductoAlertaDTO> alertas = dashboardService.obtenerProductosStockBajo(limite);
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().write(gson.toJson(ApiResponse.ok("Productos con alerta", alertas)));
+                return;
+            }
+
+            if ("/api/dashboard/productos-vencer".equals(path)) {
+                int limite = parseLimite(request.getParameter("limite"));
+                List<ProductoAlertaDTO> alertas = dashboardService.obtenerProductosPorVencer(limite);
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write(gson.toJson(ApiResponse.ok("Productos por vencer", alertas)));
                 return;
             }
 
