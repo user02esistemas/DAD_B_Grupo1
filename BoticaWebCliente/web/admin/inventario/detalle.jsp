@@ -6,7 +6,7 @@
 --%>
 
 <%@ page contentType="text/html" pageEncoding="UTF-8"%>
-<%@ page import="DAO.TransaccionDAO, DTO.TransaccionDTO, DTO.DetalleTransaccionDTO, java.util.List, java.text.SimpleDateFormat" %>
+<%@ page import="integration.api.VentaApiClient, DTO.TransaccionDTO, DTO.DetalleTransaccionDTO, java.util.List, java.text.SimpleDateFormat" %>
 <%
     request.setAttribute("pageTitle", "Detalle de Transacción - Sistema Botica");
     
@@ -17,8 +17,7 @@
     if (idParam != null && !idParam.isEmpty()) {
         try {
             Long id = Long.parseLong(idParam);
-            TransaccionDAO dao = new TransaccionDAO();
-            transaccion = dao.buscarPorId(id);
+            transaccion = new VentaApiClient().buscarTransaccionPorId(id);
             
             if (transaccion == null) {
                 error = "Transacción no encontrada";

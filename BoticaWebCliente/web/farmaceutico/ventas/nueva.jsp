@@ -5,7 +5,7 @@
     Description: Punto de Venta (POS) - Modelo Farmacia Perú (IGV incluido)
 --%>
 <%@ page contentType="text/html" pageEncoding="UTF-8"%>
-<%@ page import="DTO.UsuarioDTO, DTO.SesionCajaDTO, DTO.RolDTO, DAO.SesionCajaDAO, java.util.List" %>
+<%@ page import="DTO.UsuarioDTO, DTO.SesionCajaDTO, DTO.RolDTO, integration.api.CajaApiClient, java.util.List" %>
 <%
     UsuarioDTO usuario = (UsuarioDTO) session.getAttribute("usuarioLogueado");
     if (usuario == null) {
@@ -26,8 +26,7 @@
     }
     String urlRetorno = esAdmin ? "/admin/dashboard.jsp" : "/farmaceutico/caja.jsp";
     
-    SesionCajaDAO sesionDAO = new SesionCajaDAO();
-    SesionCajaDTO sesionCaja = sesionDAO.buscarSesionAbierta(usuario.getId());
+    SesionCajaDTO sesionCaja = new CajaApiClient().buscarSesionAbierta(usuario.getId());
     boolean cajaCerrada = (sesionCaja == null);
     
     // Datos para el ticket

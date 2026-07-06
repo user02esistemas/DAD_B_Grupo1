@@ -6,7 +6,7 @@
 --%>
 
 <%@ page contentType="text/html" pageEncoding="UTF-8"%>
-<%@ page import="DTO.UsuarioDTO, DTO.SesionCajaDTO, DAO.SesionCajaDAO" %>
+<%@ page import="DTO.UsuarioDTO, DTO.SesionCajaDTO, integration.api.CajaApiClient" %>
 <%
     UsuarioDTO usuario = (UsuarioDTO) session.getAttribute("usuarioLogueado");
     if (usuario == null) {
@@ -17,8 +17,7 @@
         return;
     }
     
-    SesionCajaDAO sesionDAO = new SesionCajaDAO();
-    SesionCajaDTO sesionActiva = sesionDAO.buscarSesionAbierta(usuario.getId());
+    SesionCajaDTO sesionActiva = new CajaApiClient().buscarSesionAbierta(usuario.getId());
     boolean tieneCajaAbierta = (sesionActiva != null);
     
     request.setAttribute("pageTitle", "Mi Caja - Econosalud Farmacia");

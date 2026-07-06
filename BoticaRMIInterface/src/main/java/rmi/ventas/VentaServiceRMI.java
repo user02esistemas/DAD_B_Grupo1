@@ -24,6 +24,8 @@ public interface VentaServiceRMI extends Remote {
 
     int contarVentas() throws RemoteException;
 
+    int contarVentas(String termino) throws RemoteException;
+
     boolean anular(Long id) throws RemoteException;
 
     String generarNumeroVenta() throws RemoteException;

@@ -5,7 +5,7 @@
     Description: Historial de Ventas
 --%>
 <%@ page contentType="text/html" pageEncoding="UTF-8"%>
-<%@ page import="DTO.TransaccionDTO, DTO.RolDTO, DAO.TransaccionDAO, java.util.List, java.text.SimpleDateFormat" %>
+<%@ page import="DTO.TransaccionDTO, DTO.RolDTO, integration.api.VentaApiClient, java.util.List, java.text.SimpleDateFormat" %>
 <%
     request.setAttribute("pageTitle", "Historial de Ventas - Seycalf Farmacia");
     
@@ -32,12 +32,10 @@
         if (pagina < 1) pagina = 1;
     } catch (Exception e) { pagina = 1; }
     
-    TransaccionDAO dao = new TransaccionDAO();
-    int totalRegistros = dao.contarVentas(busqueda);
+    VentaApiClient.VentasResult ventasResult = new VentaApiClient().listarVentas(busqueda, pagina, porPagina);
+    int totalRegistros = ventasResult.getTotal();
     int totalPaginas = (int) Math.ceil((double) totalRegistros / porPagina);
-    int offset = (pagina - 1) * porPagina;
-    
-    List<TransaccionDTO> ventas = dao.listarVentas(busqueda, offset, porPagina);
+    List<TransaccionDTO> ventas = ventasResult.getVentas();
     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 %>
 <%@ include file="/WEB-INF/includes/head.jsp" %>

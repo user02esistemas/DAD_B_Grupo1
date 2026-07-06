@@ -12,6 +12,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import rmi.dto.DetalleTransaccionDTO;
 import rmi.dto.SesionCajaDTO;
 import rmi.dto.TransaccionDTO;
@@ -40,6 +42,22 @@ public class VentaApiServlet extends HttpServlet {
                 }
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().write(gson.toJson(ApiResponse.ok("Venta encontrada", venta)));
+                return;
+            }
+
+            Integer pagina = parseOptionalInt(request.getParameter("pagina"));
+            Integer porPagina = parseOptionalInt(request.getParameter("porPagina"));
+            if (pagina != null || porPagina != null) {
+                int paginaValor = pagina == null ? 1 : pagina;
+                int porPaginaValor = porPagina == null ? 15 : porPagina;
+                String termino = request.getParameter("termino");
+                Map<String, Object> data = new LinkedHashMap<>();
+                data.put("ventas", ventaService.buscar(termino, paginaValor, porPaginaValor));
+                data.put("total", ventaService.contarVentas(termino));
+                data.put("pagina", paginaValor);
+                data.put("porPagina", porPaginaValor);
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write(gson.toJson(ApiResponse.ok("Ventas encontradas", data)));
                 return;
             }
 
@@ -110,6 +128,14 @@ public class VentaApiServlet extends HttpServlet {
             return value == null ? 10 : Integer.parseInt(value);
         } catch (NumberFormatException ex) {
             return 10;
+        }
+    }
+
+    private Integer parseOptionalInt(String value) {
+        try {
+            return value == null || value.trim().isEmpty() ? null : Integer.valueOf(value);
+        } catch (NumberFormatException ex) {
+            return null;
         }
     }
 

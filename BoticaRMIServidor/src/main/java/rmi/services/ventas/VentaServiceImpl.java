@@ -35,17 +35,22 @@ public class VentaServiceImpl extends UnicastRemoteObject implements VentaServic
 
     @Override
     public List<TransaccionDTO> listarVentas(int pagina, int porPagina) throws RemoteException {
-        return ventaDAO.listarUltimas(porPagina);
+        return ventaDAO.buscar(null, pagina, porPagina);
     }
 
     @Override
     public List<TransaccionDTO> buscar(String termino, int pagina, int porPagina) throws RemoteException {
-        return ventaDAO.listarUltimas(porPagina);
+        return ventaDAO.buscar(termino, pagina, porPagina);
     }
 
     @Override
     public int contarVentas() throws RemoteException {
-        throw new UnsupportedOperationException("Conteo de ventas pendiente");
+        return ventaDAO.contarVentas(null);
+    }
+
+    @Override
+    public int contarVentas(String termino) throws RemoteException {
+        return ventaDAO.contarVentas(termino);
     }
 
     @Override
