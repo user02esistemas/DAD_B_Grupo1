@@ -3,6 +3,10 @@ package controller;
 import DAO.ReporteDAO;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import integration.api.ReporteApiClient;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -24,6 +28,7 @@ import java.util.Map;
 public class ReporteController extends HttpServlet {
 
     private final ReporteDAO reporteDAO = new ReporteDAO();
+    private final ReporteApiClient reporteApiClient = new ReporteApiClient();
     private final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss").create();
     private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -72,13 +77,13 @@ public class ReporteController extends HttpServlet {
 
                 // ========== REPORTE VENTAS ==========
                 case "resumenVentas":
-                    out.print(gson.toJson(reporteResumenVentas(request)));
+                    out.print(gson.toJson(reporteResumenVentasApi(request)));
                     break;
                 case "listarVentas":
-                    out.print(gson.toJson(reporteListarVentas(request)));
+                    out.print(gson.toJson(reporteListarVentasApi(request)));
                     break;
                 case "ventasPorDia":
-                    out.print(gson.toJson(reporteVentasPorDia(request)));
+                    out.print(gson.toJson(reporteVentasPorDiaApi(request)));
                     break;
 
                 // ========== DATOS AUXILIARES ==========
@@ -150,6 +155,13 @@ public class ReporteController extends HttpServlet {
         return resultado;
     }
 
+    private JsonObject reporteResumenVentasApi(HttpServletRequest request) throws ParseException, IOException {
+        JsonObject data = obtenerReporteVentasApi(request, obtenerPrimerDiaMes(), new Date());
+        JsonObject resultado = data.getAsJsonObject("resumen").deepCopy();
+        resultado.add("ventasPorDia", normalizarVentasPorDia(data.getAsJsonArray("ventasPorDia")));
+        return resultado;
+    }
+
     private Map<String, Object> reporteListarVentas(HttpServletRequest request) throws ParseException {
         String fechaDesdeStr = request.getParameter("fechaDesde");
         String fechaHastaStr = request.getParameter("fechaHasta");
@@ -165,6 +177,14 @@ public class ReporteController extends HttpServlet {
         return resultado;
     }
 
+    private JsonObject reporteListarVentasApi(HttpServletRequest request) throws ParseException, IOException {
+        JsonObject data = obtenerReporteVentasApi(request, obtenerPrimerDiaMes(), new Date());
+        JsonObject resultado = new JsonObject();
+        resultado.add("resumen", data.getAsJsonObject("resumen"));
+        resultado.add("ventas", normalizarVentas(data.getAsJsonArray("ventas")));
+        return resultado;
+    }
+
     private List<Map<String, Object>> reporteVentasPorDia(HttpServletRequest request) throws ParseException {
         String fechaDesdeStr = request.getParameter("fechaDesde");
         String fechaHastaStr = request.getParameter("fechaHasta");
@@ -175,6 +195,68 @@ public class ReporteController extends HttpServlet {
                 ? sdf.parse(fechaHastaStr) : new Date();
 
         return reporteDAO.obtenerVentasPorDia(fechaDesde, fechaHasta);
+    }
+
+    private JsonArray reporteVentasPorDiaApi(HttpServletRequest request) throws ParseException, IOException {
+        JsonObject data = obtenerReporteVentasApi(request, sumarDias(new Date(), -7), new Date());
+        return normalizarVentasPorDia(data.getAsJsonArray("ventasPorDia"));
+    }
+
+    private JsonObject obtenerReporteVentasApi(HttpServletRequest request, Date fechaDesdeDefault, Date fechaHastaDefault)
+            throws ParseException, IOException {
+        String fechaDesdeStr = request.getParameter("fechaDesde");
+        String fechaHastaStr = request.getParameter("fechaHasta");
+
+        Date fechaDesde = fechaDesdeStr != null && !fechaDesdeStr.isEmpty()
+                ? sdf.parse(fechaDesdeStr) : fechaDesdeDefault;
+        Date fechaHasta = fechaHastaStr != null && !fechaHastaStr.isEmpty()
+                ? sdf.parse(fechaHastaStr) : fechaHastaDefault;
+
+        return reporteApiClient.obtenerReporteVentas(sdf.format(fechaDesde), sdf.format(fechaHasta));
+    }
+
+    private JsonArray normalizarVentas(JsonArray ventasApi) {
+        JsonArray ventas = new JsonArray();
+        if (ventasApi == null) {
+            return ventas;
+        }
+        for (JsonElement element : ventasApi) {
+            if (!element.isJsonObject()) {
+                continue;
+            }
+            JsonObject item = element.getAsJsonObject();
+            JsonObject venta = new JsonObject();
+            copiar(venta, "id", item, "id");
+            copiar(venta, "numero", item, "numeroTransaccion");
+            copiar(venta, "fecha", item, "fecha");
+            copiar(venta, "total", item, "total");
+            copiar(venta, "metodoPago", item, "metodoPago");
+            copiar(venta, "montoEfectivo", item, "montoEfectivo");
+            copiar(venta, "montoVirtual", item, "montoVirtual");
+            copiar(venta, "vuelto", item, "vuelto");
+            copiar(venta, "cajero", item, "usuarioNombre");
+            ventas.add(venta);
+        }
+        return ventas;
+    }
+
+    private JsonArray normalizarVentasPorDia(JsonArray ventasPorDiaApi) {
+        JsonArray ventasPorDia = new JsonArray();
+        if (ventasPorDiaApi == null) {
+            return ventasPorDia;
+        }
+        for (JsonElement element : ventasPorDiaApi) {
+            if (element.isJsonObject()) {
+                ventasPorDia.add(element.getAsJsonObject());
+            }
+        }
+        return ventasPorDia;
+    }
+
+    private void copiar(JsonObject destino, String destinoKey, JsonObject origen, String origenKey) {
+        if (origen.has(origenKey) && !origen.get(origenKey).isJsonNull()) {
+            destino.add(destinoKey, origen.get(origenKey));
+        }
     }
 
     // =====================================================
