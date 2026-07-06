@@ -6,7 +6,7 @@
 --%>
 
 <%@ page contentType="text/html" pageEncoding="UTF-8"%>
-<%@ page import="DTO.TransaccionDTO, java.util.List, java.text.SimpleDateFormat" %>
+<%@ page import="DTO.TransaccionDTO, integration.api.CompraApiClient, java.util.List, java.text.SimpleDateFormat" %>
 <%
     request.setAttribute("pageTitle", "Historial de Compras - Sistema Botica");
     
@@ -22,7 +22,7 @@
         pagina = 1;
     }
     
-    List<TransaccionDTO> compras = TransaccionDTO.listarCompras(pagina, porPagina);
+    List<TransaccionDTO> compras = new CompraApiClient().listarCompras(pagina, porPagina);
     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 %>
 <%@ include file="/WEB-INF/includes/head.jsp" %>

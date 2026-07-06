@@ -2,10 +2,13 @@ package rmi.services.compras;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.math.BigDecimal;
 import java.util.List;
 import rmi.compras.CompraServiceRMI;
 import rmi.dao.CompraDAO;
+import rmi.dto.CatalogoProductoDTO;
 import rmi.dto.DetalleTransaccionDTO;
+import rmi.dto.ProductoDTO;
 import rmi.dto.ProveedorDTO;
 import rmi.dto.TransaccionDTO;
 
@@ -29,22 +32,52 @@ public class CompraServiceImpl extends UnicastRemoteObject implements CompraServ
 
     @Override
     public List<TransaccionDTO> listarCompras(int pagina, int porPagina) throws RemoteException {
-        return compraDAO.listarCompras(porPagina);
+        return compraDAO.listarCompras(pagina, porPagina);
     }
 
     @Override
     public int contarCompras() throws RemoteException {
-        throw new UnsupportedOperationException("Conteo de compras pendiente");
+        return compraDAO.contarCompras();
     }
 
     @Override
     public boolean anular(Long id) throws RemoteException {
-        throw new UnsupportedOperationException("Anulacion pendiente");
+        return compraDAO.anular(id);
     }
 
     @Override
     public String generarNumeroCompra() throws RemoteException {
         return compraDAO.generarNumeroCompra();
+    }
+
+    @Override
+    public List<CatalogoProductoDTO> buscarProductosCatalogo(String termino, int limite) throws RemoteException {
+        return compraDAO.buscarProductosCatalogo(termino, limite);
+    }
+
+    @Override
+    public CatalogoProductoDTO buscarProductoCatalogoPorCodigo(String codigo) throws RemoteException {
+        return compraDAO.buscarProductoCatalogoPorCodigo(codigo);
+    }
+
+    @Override
+    public CatalogoProductoDTO buscarProductoCatalogoPorId(Long id) throws RemoteException {
+        return compraDAO.buscarProductoCatalogoPorId(id);
+    }
+
+    @Override
+    public int obtenerStockTotalPorCatalogo(Long catalogoId) throws RemoteException {
+        return compraDAO.obtenerStockTotalPorCatalogo(catalogoId);
+    }
+
+    @Override
+    public BigDecimal obtenerPrecioCompraPorCatalogo(Long catalogoId) throws RemoteException {
+        return compraDAO.obtenerPrecioCompraPorCatalogo(catalogoId);
+    }
+
+    @Override
+    public List<ProductoDTO> listarLotesPorCatalogo(Long catalogoId) throws RemoteException {
+        return compraDAO.listarLotesPorCatalogo(catalogoId);
     }
 
     @Override
@@ -64,7 +97,7 @@ public class CompraServiceImpl extends UnicastRemoteObject implements CompraServ
 
     @Override
     public Long insertarProveedor(ProveedorDTO proveedor) throws RemoteException {
-        throw new UnsupportedOperationException("Registro de proveedor pendiente");
+        return compraDAO.insertarProveedor(proveedor);
     }
 
     @Override
