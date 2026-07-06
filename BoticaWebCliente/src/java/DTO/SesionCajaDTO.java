@@ -1,6 +1,5 @@
 package DTO;
 
-import DAO.SesionCajaDAO;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 
@@ -88,57 +87,6 @@ public class SesionCajaDTO {
 
     public String getUsuarioNombre() { return usuarioNombre; }
     public void setUsuarioNombre(String usuarioNombre) { this.usuarioNombre = usuarioNombre; }
-
-    // =====================================================
-    //              MÉTODOS DE NEGOCIO (DTO)
-    // =====================================================
-
-    /**
-     * Abrir nueva sesión de caja
-     */
-    public boolean abrir() {
-        Long idGenerado = new SesionCajaDAO().abrirSesion(this);
-        if (idGenerado != null) {
-            this.id = idGenerado;
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Cerrar sesión de caja
-     */
-    public boolean cerrar() {
-        return new SesionCajaDAO().cerrarSesion(this);
-    }
-
-    /**
-     * Buscar sesión abierta del usuario
-     */
-    public static SesionCajaDTO buscarSesionAbierta(Long usuarioId) {
-        return new SesionCajaDAO().buscarSesionAbierta(usuarioId);
-    }
-
-    /**
-     * Buscar sesión por ID
-     */
-    public static SesionCajaDTO buscarPorId(Long id) {
-        return new SesionCajaDAO().buscarPorId(id);
-    }
-
-    /**
-     * Verificar si usuario tiene sesión abierta
-     */
-    public static boolean tieneSesionAbierta(Long usuarioId) {
-        return new SesionCajaDAO().tieneSesionAbierta(usuarioId);
-    }
-
-    /**
-     * Actualizar totales de la sesión
-     */
-    public boolean actualizarTotales() {
-        return new SesionCajaDAO().actualizarTotales(this);
-    }
 
     /**
      * Calcular efectivo esperado

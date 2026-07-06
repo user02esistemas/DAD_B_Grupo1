@@ -1,8 +1,6 @@
 package DTO;
 
-import DAO.CatalogoProductoDAO;
 import java.sql.Timestamp;
-import java.util.List;
 
 /**
  * DTO para el catálogo de productos DIGEMID
@@ -140,46 +138,6 @@ public class CatalogoProductoDTO {
 
     public void setCreatedAt(Timestamp createdAt) {
         this.createdAt = createdAt;
-    }
-
-    // =====================================================
-    //              MÉTODOS DE NEGOCIO (DTO)
-    // =====================================================
-
-    /**
-     * Buscar producto por ID
-     */
-    public static CatalogoProductoDTO buscarPorId(Long id) {
-        return new CatalogoProductoDAO().buscarPorId(id);
-    }
-
-    /**
-     * Búsqueda optimizada para autocomplete (límite de resultados)
-     * Busca en nombre_comercial, principio_activo, concentracion, laboratorio
-     */
-    public static List<CatalogoProductoDTO> buscarParaAutocomplete(String termino, int limite) {
-        return new CatalogoProductoDAO().buscarParaAutocomplete(termino, limite);
-    }
-
-    /**
-     * Búsqueda por código de producto (código de barras)
-     */
-    public static CatalogoProductoDTO buscarPorCodigo(String codigo) {
-        return new CatalogoProductoDAO().buscarPorCodigo(codigo);
-    }
-
-    /**
-     * Listar todos (paginado para no cargar 14k de golpe)
-     */
-    public static List<CatalogoProductoDTO> listarPaginado(int pagina, int porPagina) {
-        return new CatalogoProductoDAO().listarPaginado(pagina, porPagina);
-    }
-
-    /**
-     * Contar total de productos en catálogo
-     */
-    public static int contarTotal() {
-        return new CatalogoProductoDAO().contarTotal();
     }
 
     /**

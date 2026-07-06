@@ -1,8 +1,6 @@
 package DTO;
 
-import DAO.MovimientoInventarioDAO;
 import java.sql.Timestamp;
-import java.util.List;
 
 /**
  * DTO para Movimientos de Inventario
@@ -141,78 +139,6 @@ public class MovimientoInventarioDTO {
 
     public void setLote(String lote) {
         this.lote = lote;
-    }
-
-    // =====================================================
-    //              MÉTODOS DE NEGOCIO (DTO)
-    // =====================================================
-
-    /**
-     * Registrar movimiento
-     */
-    public boolean registrar() {
-        Long idGenerado = new MovimientoInventarioDAO().registrar(this);
-        if (idGenerado != null) {
-            this.id = idGenerado;
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Realizar ajuste de inventario
-     */
-    public static boolean realizarAjuste(Long productoId, int nuevoStock, String motivo, Long usuarioId) {
-        return new MovimientoInventarioDAO().realizarAjuste(productoId, nuevoStock, motivo, usuarioId);
-    }
-
-    /**
-     * Listar movimientos por producto
-     */
-    public static List<MovimientoInventarioDTO> listarPorProducto(Long productoId, int pagina, int porPagina) {
-        return new MovimientoInventarioDAO().listarPorProducto(productoId, pagina, porPagina);
-    }
-
-    /**
-     * Listar todos los movimientos
-     */
-    public static List<MovimientoInventarioDTO> listarTodos(int pagina, int porPagina) {
-        return new MovimientoInventarioDAO().listarTodos(pagina, porPagina);
-    }
-
-    /**
-     * Buscar movimientos
-     */
-    public static List<MovimientoInventarioDTO> buscar(String termino, int pagina, int porPagina) {
-        return new MovimientoInventarioDAO().buscar(termino, pagina, porPagina);
-    }
-
-    /**
-     * Contar total de movimientos
-     */
-    public static int contarTodos() {
-        return new MovimientoInventarioDAO().contarTodos();
-    }
-
-    /**
-     * Contar movimientos por búsqueda
-     */
-    public static int contarBusqueda(String termino) {
-        return new MovimientoInventarioDAO().contarBusqueda(termino);
-    }
-
-    /**
-     * Listar movimientos recientes
-     */
-    public static List<MovimientoInventarioDTO> listarRecientes(int limite) {
-        return new MovimientoInventarioDAO().listarRecientes(limite);
-    }
-
-    /**
-     * Contar movimientos por producto
-     */
-    public static int contarPorProducto(Long productoId) {
-        return new MovimientoInventarioDAO().contarPorProducto(productoId);
     }
 
     // =====================================================
