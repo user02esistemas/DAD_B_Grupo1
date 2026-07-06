@@ -28,4 +28,10 @@ public interface ReporteServiceRMI extends Remote {
     List<Map<String, Object>> obtenerProductosPorVencerRango(String fechaDesde, String fechaHasta) throws RemoteException;
 
     Map<String, Integer> contarVencimientosPorCriticidad() throws RemoteException;
+
+    List<Map<String, Object>> listarSesionesCaja(String fechaDesde, String fechaHasta, Long usuarioId) throws RemoteException;
+
+    Map<String, Object> obtenerDetalleSesionCaja(Long sesionId) throws RemoteException;
+
+    List<Map<String, Object>> obtenerVentasSesionCaja(Long sesionId) throws RemoteException;
 }

@@ -58,4 +58,19 @@ public class ReporteServiceImpl extends UnicastRemoteObject implements ReporteSe
     public Map<String, Integer> contarVencimientosPorCriticidad() throws RemoteException {
         return reporteDAO.contarVencimientosPorCriticidad();
     }
+
+    @Override
+    public List<Map<String, Object>> listarSesionesCaja(String fechaDesde, String fechaHasta, Long usuarioId) throws RemoteException {
+        return reporteDAO.listarSesionesCaja(fechaDesde, fechaHasta, usuarioId);
+    }
+
+    @Override
+    public Map<String, Object> obtenerDetalleSesionCaja(Long sesionId) throws RemoteException {
+        return reporteDAO.obtenerDetalleSesionCaja(sesionId);
+    }
+
+    @Override
+    public List<Map<String, Object>> obtenerVentasSesionCaja(Long sesionId) throws RemoteException {
+        return reporteDAO.obtenerVentasSesionCaja(sesionId);
+    }
 }

@@ -183,6 +183,149 @@ public class ReporteDAO {
         return conteo;
     }
 
+    public List<Map<String, Object>> listarSesionesCaja(String fechaDesde, String fechaHasta, Long usuarioId) {
+        StringBuilder sql = new StringBuilder("SELECT s.*, c.nombre AS caja_nombre, u.nombre_completo AS usuario_nombre "
+                + "FROM sesiones_caja s "
+                + "INNER JOIN cajas c ON s.caja_id = c.id "
+                + "INNER JOIN usuarios u ON s.usuario_id = u.id WHERE 1=1 ");
+        List<Object> params = new ArrayList<>();
+        if (fechaDesde != null && !fechaDesde.trim().isEmpty()) {
+            sql.append("AND DATE(s.fecha_apertura) >= ? ");
+            params.add(Date.valueOf(fechaDesde));
+        }
+        if (fechaHasta != null && !fechaHasta.trim().isEmpty()) {
+            sql.append("AND DATE(s.fecha_apertura) <= ? ");
+            params.add(Date.valueOf(fechaHasta));
+        }
+        if (usuarioId != null) {
+            sql.append("AND s.usuario_id = ? ");
+            params.add(usuarioId);
+        }
+        sql.append("ORDER BY s.fecha_apertura DESC");
+
+        List<Map<String, Object>> sesiones = new ArrayList<>();
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql.toString())) {
+            setParams(ps, params);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    sesiones.add(mapearSesionCaja(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al listar sesiones de caja", ex);
+        }
+        return sesiones;
+    }
+
+    public Map<String, Object> obtenerDetalleSesionCaja(Long sesionId) {
+        Map<String, Object> detalle = new HashMap<>();
+        String sqlSesion = "SELECT s.*, c.nombre AS caja_nombre, u.nombre_completo AS usuario_nombre "
+                + "FROM sesiones_caja s "
+                + "INNER JOIN cajas c ON s.caja_id = c.id "
+                + "INNER JOIN usuarios u ON s.usuario_id = u.id WHERE s.id = ?";
+        String sqlTotales = "SELECT COUNT(*) AS cantidad_ventas, COALESCE(SUM(total), 0) AS total_general, "
+                + "COALESCE(SUM(CASE WHEN metodo_pago = 'EFECTIVO' THEN total ELSE 0 END), 0) AS total_efectivo, "
+                + "COALESCE(SUM(CASE WHEN metodo_pago = 'YAPE_PLIN' THEN total ELSE 0 END), 0) AS total_yape_plin, "
+                + "COALESCE(SUM(CASE WHEN metodo_pago = 'TARJETA' THEN total ELSE 0 END), 0) AS total_tarjeta, "
+                + "COALESCE(SUM(CASE WHEN metodo_pago = 'MIXTO' THEN total ELSE 0 END), 0) AS total_mixto, "
+                + "COALESCE(SUM(monto_efectivo), 0) AS efectivo_recibido, COALESCE(SUM(vuelto), 0) AS total_vueltos "
+                + "FROM transacciones WHERE sesion_caja_id = ? AND tipo_transaccion_id = 2 AND estado = 'COMPLETADA'";
+        try (Connection con = DatabaseConfig.getConnection()) {
+            try (PreparedStatement ps = con.prepareStatement(sqlSesion)) {
+                ps.setLong(1, sesionId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        detalle.putAll(mapearSesionCaja(rs));
+                    }
+                }
+            }
+            try (PreparedStatement ps = con.prepareStatement(sqlTotales)) {
+                ps.setLong(1, sesionId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        detalle.put("cantidadVentas", rs.getInt("cantidad_ventas"));
+                        detalle.put("totalGeneral", rs.getBigDecimal("total_general"));
+                        detalle.put("totalEfectivo", rs.getBigDecimal("total_efectivo"));
+                        detalle.put("totalYapePlin", rs.getBigDecimal("total_yape_plin"));
+                        detalle.put("totalTarjeta", rs.getBigDecimal("total_tarjeta"));
+                        detalle.put("totalMixto", rs.getBigDecimal("total_mixto"));
+                        detalle.put("efectivoRecibido", rs.getBigDecimal("efectivo_recibido"));
+                        detalle.put("totalVueltos", rs.getBigDecimal("total_vueltos"));
+                        java.math.BigDecimal montoInicial = (java.math.BigDecimal) detalle.get("montoInicial");
+                        java.math.BigDecimal montoFinal = (java.math.BigDecimal) detalle.get("montoFinal");
+                        java.math.BigDecimal efectivoEsperado = montoInicial == null ? null : montoInicial.add(rs.getBigDecimal("efectivo_recibido")).subtract(rs.getBigDecimal("total_vueltos"));
+                        detalle.put("efectivoEsperadoCalculado", efectivoEsperado);
+                        if (montoFinal != null && efectivoEsperado != null) {
+                            detalle.put("diferenciaCaja", montoFinal.subtract(efectivoEsperado));
+                        }
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al obtener detalle de sesion de caja", ex);
+        }
+        return detalle;
+    }
+
+    public List<Map<String, Object>> obtenerVentasSesionCaja(Long sesionId) {
+        String sql = "SELECT t.id, t.numero_transaccion, t.fecha, t.total, t.metodo_pago, "
+                + "t.monto_efectivo, t.monto_virtual, t.vuelto "
+                + "FROM transacciones t WHERE t.sesion_caja_id = ? AND t.tipo_transaccion_id = 2 "
+                + "AND t.estado = 'COMPLETADA' ORDER BY t.fecha ASC";
+        List<Map<String, Object>> ventas = new ArrayList<>();
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setLong(1, sesionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> venta = new HashMap<>();
+                    venta.put("id", rs.getLong("id"));
+                    venta.put("numero", rs.getString("numero_transaccion"));
+                    venta.put("fecha", rs.getTimestamp("fecha"));
+                    venta.put("total", rs.getBigDecimal("total"));
+                    venta.put("metodoPago", rs.getString("metodo_pago"));
+                    venta.put("montoEfectivo", rs.getBigDecimal("monto_efectivo"));
+                    venta.put("montoVirtual", rs.getBigDecimal("monto_virtual"));
+                    venta.put("vuelto", rs.getBigDecimal("vuelto"));
+                    ventas.add(venta);
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al obtener ventas de sesion de caja", ex);
+        }
+        return ventas;
+    }
+
+    private Map<String, Object> mapearSesionCaja(ResultSet rs) throws SQLException {
+        Map<String, Object> sesion = new HashMap<>();
+        sesion.put("id", rs.getLong("id"));
+        sesion.put("cajaNombre", rs.getString("caja_nombre"));
+        sesion.put("usuarioNombre", rs.getString("usuario_nombre"));
+        sesion.put("fechaApertura", rs.getTimestamp("fecha_apertura"));
+        sesion.put("fechaCierre", rs.getTimestamp("fecha_cierre"));
+        sesion.put("montoInicial", rs.getBigDecimal("monto_inicial"));
+        sesion.put("montoFinal", rs.getBigDecimal("monto_final"));
+        sesion.put("totalTransacciones", rs.getBigDecimal("total_transacciones"));
+        sesion.put("totalVentasEfectivo", rs.getBigDecimal("total_ventas_efectivo"));
+        sesion.put("totalVentasVirtual", rs.getBigDecimal("total_ventas_virtual"));
+        sesion.put("efectivoEsperado", rs.getBigDecimal("efectivo_esperado"));
+        sesion.put("estado", rs.getString("estado"));
+        sesion.put("observaciones", rs.getString("observaciones"));
+        return sesion;
+    }
+
+    private void setParams(PreparedStatement ps, List<Object> params) throws SQLException {
+        for (int i = 0; i < params.size(); i++) {
+            Object param = params.get(i);
+            if (param instanceof Date) {
+                ps.setDate(i + 1, (Date) param);
+            } else if (param instanceof Long) {
+                ps.setLong(i + 1, (Long) param);
+            }
+        }
+    }
+
     private Map<String, Object> mapearProductoVencimiento(ResultSet rs) throws SQLException {
         Map<String, Object> producto = new HashMap<>();
         producto.put("id", rs.getLong("id"));

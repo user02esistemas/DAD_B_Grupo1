@@ -1,6 +1,5 @@
 package controller;
 
-import DAO.ReporteDAO;
 import DTO.UsuarioDTO;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -20,7 +19,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -29,7 +27,6 @@ import java.util.Map;
 @WebServlet(name = "ReporteController", urlPatterns = {"/ReporteController"})
 public class ReporteController extends HttpServlet {
 
-    private final ReporteDAO reporteDAO = new ReporteDAO();
     private final ReporteApiClient reporteApiClient = new ReporteApiClient();
     private final UsuarioApiClient usuarioApiClient = new UsuarioApiClient();
     private final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss").create();
@@ -69,9 +66,7 @@ public class ReporteController extends HttpServlet {
                 case "detalleSesion":
                     Long sesionId = getLongParam(request, "sesionId", null);
                     if (sesionId != null) {
-                        Map<String, Object> detalle = reporteDAO.obtenerDetalleSesionCaja(sesionId);
-                        detalle.put("ventas", reporteDAO.obtenerVentasSesion(sesionId));
-                        out.print(gson.toJson(detalle));
+                        out.print(gson.toJson(reporteApiClient.obtenerDetalleSesionCaja(sesionId)));
                     } else {
                         response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                         out.print("{\"error\": \"Se requiere sesionId\"}");
@@ -126,15 +121,11 @@ public class ReporteController extends HttpServlet {
         return reporteApiClient.obtenerReporteVencimientosRango(sdf.format(fechaDesde), sdf.format(fechaHasta));
     }
 
-    private List<Map<String, Object>> reporteSesionesCaja(HttpServletRequest request) throws ParseException {
+    private JsonArray reporteSesionesCaja(HttpServletRequest request) throws IOException {
         String fechaDesdeStr = request.getParameter("fechaDesde");
         String fechaHastaStr = request.getParameter("fechaHasta");
         Long usuarioId = getLongParam(request, "usuarioId", null);
-
-        Date fechaDesde = fechaDesdeStr != null && !fechaDesdeStr.isEmpty() ? sdf.parse(fechaDesdeStr) : null;
-        Date fechaHasta = fechaHastaStr != null && !fechaHastaStr.isEmpty() ? sdf.parse(fechaHastaStr) : null;
-
-        return reporteDAO.listarSesionesCaja(fechaDesde, fechaHasta, usuarioId);
+        return reporteApiClient.obtenerSesionesCaja(fechaDesdeStr, fechaHastaStr, usuarioId).getAsJsonArray("sesiones");
     }
 
     private JsonObject reporteResumenVentasApi(HttpServletRequest request) throws ParseException, IOException {

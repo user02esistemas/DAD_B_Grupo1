@@ -20,7 +20,9 @@ import rmi.reportes.ReporteServiceRMI;
     "/api/reportes/productos-mas-vendidos",
     "/api/reportes/vencimientos",
     "/api/reportes/vencimientos-rango",
-    "/api/reportes/vencimientos/criticidad"
+    "/api/reportes/vencimientos/criticidad",
+    "/api/reportes/caja/sesiones",
+    "/api/reportes/caja/detalle"
 })
 public class ReporteApiServlet extends HttpServlet {
 
@@ -71,6 +73,30 @@ public class ReporteApiServlet extends HttpServlet {
                 return;
             }
 
+            if ("/api/reportes/caja/sesiones".equals(path)) {
+                String desde = validarFechaOpcional(request.getParameter("desde"), "desde");
+                String hasta = validarFechaOpcional(request.getParameter("hasta"), "hasta");
+                Long usuarioId = parseLong(request.getParameter("usuarioId"));
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write(gson.toJson(ApiResponse.ok(
+                        "Sesiones de caja", reporteService.listarSesionesCaja(desde, hasta, usuarioId))));
+                return;
+            }
+
+            if ("/api/reportes/caja/detalle".equals(path)) {
+                Long sesionId = parseLong(request.getParameter("sesionId"));
+                if (sesionId == null) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    response.getWriter().write(gson.toJson(ApiResponse.error("Sesion requerida")));
+                    return;
+                }
+                Map<String, Object> detalle = new LinkedHashMap<>(reporteService.obtenerDetalleSesionCaja(sesionId));
+                detalle.put("ventas", reporteService.obtenerVentasSesionCaja(sesionId));
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write(gson.toJson(ApiResponse.ok("Detalle de sesion de caja", detalle)));
+                return;
+            }
+
             String desde = validarFecha(request.getParameter("desde"), "desde");
             String hasta = validarFecha(request.getParameter("hasta"), "hasta");
             Map<String, Object> reporte = new LinkedHashMap<>();
@@ -99,6 +125,21 @@ public class ReporteApiServlet extends HttpServlet {
             return LocalDate.parse(value).toString();
         } catch (DateTimeParseException ex) {
             throw new IllegalArgumentException("Formato de fecha invalido para " + nombre + ": use yyyy-MM-dd");
+        }
+    }
+
+    private String validarFechaOpcional(String value, String nombre) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        return validarFecha(value, nombre);
+    }
+
+    private Long parseLong(String value) {
+        try {
+            return value == null || value.trim().isEmpty() ? null : Long.parseLong(value);
+        } catch (NumberFormatException ex) {
+            return null;
         }
     }
 
