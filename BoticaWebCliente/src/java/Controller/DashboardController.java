@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import integration.api.CajaApiClient;
 import integration.api.DashboardApiClient;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -27,6 +28,7 @@ public class DashboardController extends HttpServlet {
 
     private final DashboardDAO dashboardDAO = new DashboardDAO();
     private final DashboardApiClient dashboardApiClient = new DashboardApiClient();
+    private final CajaApiClient cajaApiClient = new CajaApiClient();
     private final Gson gson = new Gson();
 
     @Override
@@ -99,7 +101,7 @@ public class DashboardController extends HttpServlet {
                     out.print(gson.toJson(obtenerMisUltimasVentas(request)));
                     break;
                 case "cajasDisponibles":
-                    out.print(gson.toJson(dashboardDAO.obtenerCajasDisponibles()));
+                    out.print(gson.toJson(cajaApiClient.listarCajasDisponibles()));
                     break;
                     
                 default:
@@ -188,7 +190,7 @@ public class DashboardController extends HttpServlet {
     /**
      * Obtener resumen completo del turno del farmacéutico
      */
-    private Map<String, Object> obtenerMiTurno(HttpServletRequest request) {
+    private Map<String, Object> obtenerMiTurno(HttpServletRequest request) throws IOException {
         Map<String, Object> resultado = new HashMap<>();
         
         Long usuarioId = obtenerUsuarioIdSesion(request);
@@ -223,7 +225,7 @@ public class DashboardController extends HttpServlet {
         resultado.put("productosPorVencer", dashboardDAO.obtenerProductosPorVencer(5));
         
         // Cajas disponibles (para apertura)
-        resultado.put("cajasDisponibles", dashboardDAO.obtenerCajasDisponibles());
+        resultado.put("cajasDisponibles", cajaApiClient.listarCajasDisponibles());
         
         return resultado;
     }
