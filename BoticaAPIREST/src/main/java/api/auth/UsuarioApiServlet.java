@@ -100,6 +100,33 @@ public class UsuarioApiServlet extends HttpServlet {
 
         try {
             Long id = obtenerId(request);
+            if (esRutaPassword(request)) {
+                id = obtenerIdRutaPassword(request);
+                if (id == null) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    response.getWriter().write(gson.toJson(ApiResponse.error("Id de usuario requerido")));
+                    return;
+                }
+
+                PasswordRequest passwordRequest = gson.fromJson(request.getReader(), PasswordRequest.class);
+                if (passwordRequest == null || passwordRequest.password == null || passwordRequest.password.trim().isEmpty()) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    response.getWriter().write(gson.toJson(ApiResponse.error("Password requerido")));
+                    return;
+                }
+                if (passwordRequest.password.length() < 6) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    response.getWriter().write(gson.toJson(ApiResponse.error("La contraseña debe tener al menos 6 caracteres")));
+                    return;
+                }
+
+                UsuarioServiceRMI usuarioService = RMIClientFactory.getUsuarioService();
+                usuarioService.actualizarPassword(id, passwordRequest.password);
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write(gson.toJson(ApiResponse.ok("Password actualizado", null)));
+                return;
+            }
+
             if (id == null) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 response.getWriter().write(gson.toJson(ApiResponse.error("Id de usuario requerido")));
@@ -175,6 +202,23 @@ public class UsuarioApiServlet extends HttpServlet {
         return "/roles".equals(request.getPathInfo());
     }
 
+    private boolean esRutaPassword(HttpServletRequest request) {
+        String pathInfo = request.getPathInfo();
+        return pathInfo != null && pathInfo.matches("/\\d+/password");
+    }
+
+    private Long obtenerIdRutaPassword(HttpServletRequest request) {
+        String pathInfo = request.getPathInfo();
+        if (pathInfo == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(pathInfo.split("/")[1]);
+        } catch (NumberFormatException | ArrayIndexOutOfBoundsException ex) {
+            return null;
+        }
+    }
+
     private UsuarioDTO toDto(UsuarioRequest request) {
         UsuarioDTO usuario = new UsuarioDTO();
         usuario.setUsername(request.username);
@@ -196,5 +240,9 @@ public class UsuarioApiServlet extends HttpServlet {
         private String telefono;
         private Boolean activo;
         private List<Long> rolesIds;
+    }
+
+    private static class PasswordRequest {
+        private String password;
     }
 }

@@ -5,13 +5,12 @@
 --%>
 
 <%@ page contentType="text/html" pageEncoding="UTF-8"%>
-<%@ page import="DAO.UsuarioDAO, DTO.UsuarioDTO, DTO.RolDTO, java.util.List" %>
+<%@ page import="DTO.UsuarioDTO, DTO.RolDTO, integration.api.UsuarioApiClient, java.util.List" %>
 <%
     request.setAttribute("pageTitle", "Gestión de Usuarios - Seycalf Farmacia");
 
-    // Obtener lista de usuarios
-    UsuarioDAO usuarioDAO = new UsuarioDAO();
-    List<UsuarioDTO> usuarios = usuarioDAO.listarTodos();
+    UsuarioApiClient usuarioApiClient = new UsuarioApiClient();
+    List<UsuarioDTO> usuarios = usuarioApiClient.listarTodos();
 
     String success = request.getParameter("success");
     String error = request.getParameter("error");

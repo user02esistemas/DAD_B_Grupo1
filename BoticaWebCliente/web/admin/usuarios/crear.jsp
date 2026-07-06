@@ -5,12 +5,12 @@
 --%>
 
 <%@ page contentType="text/html" pageEncoding="UTF-8"%>
-<%@ page import="DAO.RolDAO, DTO.RolDTO, java.util.List" %>
+<%@ page import="DTO.RolDTO, integration.api.UsuarioApiClient, java.util.List" %>
 <%
     request.setAttribute("pageTitle", "Crear Usuario - Seycalf Farmacia");
 
-    RolDAO rolDAO = new RolDAO();
-    List<RolDTO> rolesDisponibles = rolDAO.listarTodos();
+    UsuarioApiClient usuarioApiClient = new UsuarioApiClient();
+    List<RolDTO> rolesDisponibles = usuarioApiClient.listarRoles();
 %>
 <%@ include file="/WEB-INF/includes/head.jsp" %>    
 <%@ include file="/WEB-INF/includes/navbar.jsp" %>
