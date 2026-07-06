@@ -10,6 +10,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
 import com.google.gson.reflect.TypeToken;
+import integration.api.CompraApiClient;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -33,6 +34,7 @@ import jakarta.servlet.http.HttpSession;
 public class CompraController extends HttpServlet {
 
     private final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd").create();
+    private final CompraApiClient compraApiClient = new CompraApiClient();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -254,7 +256,7 @@ public class CompraController extends HttpServlet {
     private void listarProveedores(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
 
-        List<ProveedorDTO> proveedores = ProveedorDTO.listarActivos();
+        List<ProveedorDTO> proveedores = compraApiClient.listarProveedoresActivos();
         
         JsonArray jsonArray = new JsonArray();
         for (ProveedorDTO p : proveedores) {
