@@ -5,6 +5,7 @@ import java.rmi.registry.Registry;
 import rmi.auth.AuthServiceRMI;
 import rmi.auth.UsuarioServiceRMI;
 import rmi.compras.CompraServiceRMI;
+import rmi.inventario.InventarioServiceRMI;
 import rmi.productos.CatalogoServiceRMI;
 import rmi.productos.ProductoServiceRMI;
 import rmi.reportes.DashboardServiceRMI;
@@ -23,6 +24,7 @@ public final class RMIClientFactory {
     private static final String REPORTE_SERVICE = ReporteServiceRMI.SERVICE_NAME;
     private static final String VENTA_SERVICE = VentaServiceRMI.SERVICE_NAME;
     private static final String COMPRA_SERVICE = CompraServiceRMI.SERVICE_NAME;
+    private static final String INVENTARIO_SERVICE = InventarioServiceRMI.SERVICE_NAME;
 
     private RMIClientFactory() {
     }
@@ -96,6 +98,15 @@ public final class RMIClientFactory {
             return (CompraServiceRMI) registry.lookup(COMPRA_SERVICE);
         } catch (Exception ex) {
             throw new IllegalStateException("No se pudo conectar con CompraService RMI", ex);
+        }
+    }
+
+    public static InventarioServiceRMI getInventarioService() {
+        try {
+            Registry registry = LocateRegistry.getRegistry(RMI_HOST, RMI_PORT);
+            return (InventarioServiceRMI) registry.lookup(INVENTARIO_SERVICE);
+        } catch (Exception ex) {
+            throw new IllegalStateException("No se pudo conectar con InventarioService RMI", ex);
         }
     }
 }

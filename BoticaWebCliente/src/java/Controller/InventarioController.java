@@ -1,9 +1,8 @@
 package controller;
 
-import DAO.MovimientoInventarioDAO;
-import DTO.MovimientoInventarioDTO;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import integration.api.InventarioApiClient;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -22,7 +21,7 @@ import jakarta.servlet.http.HttpSession;
 public class InventarioController extends HttpServlet {
 
     private final Gson gson = new Gson();
-    private final MovimientoInventarioDAO movimientoDAO = new MovimientoInventarioDAO();
+    private final InventarioApiClient inventarioApiClient = new InventarioApiClient();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -106,17 +105,11 @@ public class InventarioController extends HttpServlet {
                 return;
             }
 
-            // Realizar ajuste (el DAO se encarga de actualizar producto y registrar movimiento)
-            boolean resultado = movimientoDAO.realizarAjuste(productoId, nuevoStock, motivo.trim(), usuarioId);
-
-            if (resultado) {
-                JsonObject json = new JsonObject();
-                json.addProperty("success", true);
-                json.addProperty("message", "Stock ajustado correctamente");
-                enviarJsonResponse(response, json.toString());
-            } else {
-                enviarErrorJson(response, "Error al ajustar el stock");
-            }
+            inventarioApiClient.ajustarStock(productoId, nuevoStock, motivo.trim(), usuarioId);
+            JsonObject json = new JsonObject();
+            json.addProperty("success", true);
+            json.addProperty("message", "Stock ajustado correctamente");
+            enviarJsonResponse(response, json.toString());
 
         } catch (NumberFormatException e) {
             enviarErrorJson(response, "Valores inválidos");

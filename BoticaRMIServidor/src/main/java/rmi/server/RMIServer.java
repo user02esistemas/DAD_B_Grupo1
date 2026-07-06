@@ -5,6 +5,7 @@ import java.rmi.registry.Registry;
 import rmi.auth.AuthServiceRMI;
 import rmi.auth.UsuarioServiceRMI;
 import rmi.compras.CompraServiceRMI;
+import rmi.inventario.InventarioServiceRMI;
 import rmi.productos.CatalogoServiceRMI;
 import rmi.productos.ProductoServiceRMI;
 import rmi.reportes.DashboardServiceRMI;
@@ -12,6 +13,7 @@ import rmi.reportes.ReporteServiceRMI;
 import rmi.services.auth.AuthServiceImpl;
 import rmi.services.auth.UsuarioServiceImpl;
 import rmi.services.compras.CompraServiceImpl;
+import rmi.services.inventario.InventarioServiceImpl;
 import rmi.services.productos.CatalogoServiceImpl;
 import rmi.services.productos.ProductoServiceImpl;
 import rmi.services.reportes.DashboardServiceImpl;
@@ -30,6 +32,7 @@ public class RMIServer {
     public static final String VENTA_SERVICE = VentaServiceRMI.SERVICE_NAME;
     public static final String COMPRA_SERVICE = CompraServiceRMI.SERVICE_NAME;
     public static final String USUARIO_SERVICE = UsuarioServiceRMI.SERVICE_NAME;
+    public static final String INVENTARIO_SERVICE = InventarioServiceRMI.SERVICE_NAME;
 
     public static void main(String[] args) {
         try {
@@ -42,6 +45,7 @@ public class RMIServer {
             registry.rebind(REPORTE_SERVICE, new ReporteServiceImpl());
             registry.rebind(VENTA_SERVICE, new VentaServiceImpl());
             registry.rebind(COMPRA_SERVICE, new CompraServiceImpl());
+            registry.rebind(INVENTARIO_SERVICE, new InventarioServiceImpl());
             System.out.println("Servidor RMI iniciado en puerto " + RMI_PORT);
             System.out.println("Servicio publicado: " + AUTH_SERVICE);
             System.out.println("Servicio publicado: " + USUARIO_SERVICE);
@@ -51,6 +55,7 @@ public class RMIServer {
             System.out.println("Servicio publicado: " + REPORTE_SERVICE);
             System.out.println("Servicio publicado: " + VENTA_SERVICE);
             System.out.println("Servicio publicado: " + COMPRA_SERVICE);
+            System.out.println("Servicio publicado: " + INVENTARIO_SERVICE);
         } catch (Exception ex) {
             System.err.println("No se pudo iniciar el servidor RMI: " + ex.getMessage());
             ex.printStackTrace();
