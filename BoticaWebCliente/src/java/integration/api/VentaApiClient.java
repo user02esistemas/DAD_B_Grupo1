@@ -35,6 +35,14 @@ public class VentaApiClient {
         return result.getJson().getAsJsonObject("data");
     }
 
+    public JsonObject buscarPorId(Long id) throws IOException {
+        ApiResult result = apiClient.get("/api/ventas/" + id);
+        if (!result.isSuccess()) {
+            throw new IOException(result.getMessage());
+        }
+        return result.getJson().getAsJsonObject("data");
+    }
+
     private JsonArray toDetalles(List<DetalleTransaccionDTO> detalles) {
         JsonArray array = new JsonArray();
         for (DetalleTransaccionDTO detalle : detalles) {

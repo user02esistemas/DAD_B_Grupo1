@@ -17,7 +17,7 @@ import rmi.dto.SesionCajaDTO;
 import rmi.dto.TransaccionDTO;
 import rmi.ventas.VentaServiceRMI;
 
-@WebServlet(name = "VentaApiServlet", urlPatterns = {"/api/ventas", "/api/ventas/ultimas"})
+@WebServlet(name = "VentaApiServlet", urlPatterns = {"/api/ventas", "/api/ventas/*", "/api/ventas/ultimas"})
 public class VentaApiServlet extends HttpServlet {
 
     private final Gson gson = new Gson();
@@ -29,8 +29,21 @@ public class VentaApiServlet extends HttpServlet {
         response.setContentType("application/json;charset=UTF-8");
 
         try {
-            int limite = parseLimite(request.getParameter("limite"));
             VentaServiceRMI ventaService = RMIClientFactory.getVentaService();
+            Long id = obtenerId(request);
+            if (id != null) {
+                TransaccionDTO venta = ventaService.buscarPorId(id);
+                if (venta == null) {
+                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                    response.getWriter().write(gson.toJson(ApiResponse.error("Venta no encontrada")));
+                    return;
+                }
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write(gson.toJson(ApiResponse.ok("Venta encontrada", venta)));
+                return;
+            }
+
+            int limite = parseLimite(request.getParameter("limite"));
             List<TransaccionDTO> ventas = ventaService.listarVentas(1, limite);
             response.setStatus(HttpServletResponse.SC_OK);
             response.getWriter().write(gson.toJson(ApiResponse.ok("Ultimas ventas", ventas)));
@@ -97,6 +110,18 @@ public class VentaApiServlet extends HttpServlet {
             return value == null ? 10 : Integer.parseInt(value);
         } catch (NumberFormatException ex) {
             return 10;
+        }
+    }
+
+    private Long obtenerId(HttpServletRequest request) {
+        String pathInfo = request.getPathInfo();
+        if (pathInfo == null || pathInfo.length() <= 1) {
+            return null;
+        }
+        try {
+            return Long.valueOf(pathInfo.substring(1));
+        } catch (NumberFormatException ex) {
+            return null;
         }
     }
 

@@ -1,8 +1,6 @@
 package controller;
 
-import DAO.TransaccionDAO;
 import DTO.SesionCajaDTO;
-import DTO.TransaccionDTO;
 import DTO.DetalleTransaccionDTO;
 import DTO.UsuarioDTO;
 import com.google.gson.Gson;
@@ -216,41 +214,35 @@ public class VentaController extends HttpServlet {
             }
 
             Long id = Long.parseLong(idStr);
-            TransaccionDAO dao = new TransaccionDAO();
-            TransaccionDTO venta = dao.buscarPorId(id);
-
-            if (venta == null) {
-                enviarError(response, "Venta no encontrada");
-                return;
-            }
-
-            venta.setDetalles(dao.obtenerDetalles(id));
+            JsonObject venta = ventaApiClient.buscarPorId(id);
 
             JsonObject json = new JsonObject();
             json.addProperty("success", true);
 
             JsonObject ventaObj = new JsonObject();
-            ventaObj.addProperty("id", venta.getId());
-            ventaObj.addProperty("numeroTransaccion", venta.getNumeroTransaccion());
-            ventaObj.addProperty("fecha", venta.getFecha().toString());
-            ventaObj.addProperty("cliente", venta.getCliente());
-            ventaObj.addProperty("tipoComprobante", venta.getTipoComprobante());
-            ventaObj.addProperty("metodoPago", venta.getMetodoPago());
-            ventaObj.addProperty("montoEfectivo", venta.getMontoEfectivo());
-            ventaObj.addProperty("montoVirtual", venta.getMontoVirtual());
-            ventaObj.addProperty("medioPagoVirtual", venta.getMedioPagoVirtual());
-            ventaObj.addProperty("vuelto", venta.getVuelto());
-            ventaObj.addProperty("subtotal", venta.getSubtotal());
-            ventaObj.addProperty("igv", venta.getIgv());
-            ventaObj.addProperty("total", venta.getTotal());
+            ventaObj.addProperty("id", getLong(venta, "id"));
+            ventaObj.addProperty("numeroTransaccion", getString(venta, "numeroTransaccion"));
+            ventaObj.addProperty("fecha", getString(venta, "fecha"));
+            ventaObj.addProperty("cliente", getString(venta, "cliente") != null ? getString(venta, "cliente") : getString(venta, "nombrePersona"));
+            ventaObj.addProperty("tipoComprobante", getString(venta, "tipoComprobante"));
+            ventaObj.addProperty("metodoPago", getString(venta, "metodoPago"));
+            ventaObj.add("montoEfectivo", venta.get("montoEfectivo"));
+            ventaObj.add("montoVirtual", venta.get("montoVirtual"));
+            ventaObj.addProperty("medioPagoVirtual", getString(venta, "medioPagoVirtual"));
+            ventaObj.add("vuelto", venta.get("vuelto"));
+            ventaObj.add("subtotal", venta.get("subtotal"));
+            ventaObj.add("igv", venta.get("igv"));
+            ventaObj.add("total", venta.get("total"));
 
             JsonArray detallesArray = new JsonArray();
-            for (DetalleTransaccionDTO detalle : venta.getDetalles()) {
+            JsonArray detalles = venta.getAsJsonArray("detalles");
+            if (detalles != null) for (int i = 0; i < detalles.size(); i++) {
+                JsonObject detalle = detalles.get(i).getAsJsonObject();
                 JsonObject detalleObj = new JsonObject();
-                detalleObj.addProperty("productoNombre", detalle.getNombreComercial() + " " + detalle.getConcentracion());
-                detalleObj.addProperty("cantidad", detalle.getCantidad());
-                detalleObj.addProperty("precioUnitario", detalle.getPrecioUnitario());
-                detalleObj.addProperty("subtotal", detalle.getSubtotal());
+                detalleObj.addProperty("productoNombre", getString(detalle, "nombreComercial") + " " + getString(detalle, "concentracion"));
+                detalleObj.add("cantidad", detalle.get("cantidad"));
+                detalleObj.add("precioUnitario", detalle.get("precioUnitario"));
+                detalleObj.add("subtotal", detalle.get("subtotal"));
                 detallesArray.add(detalleObj);
             }
             ventaObj.add("detalles", detallesArray);
