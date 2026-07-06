@@ -1,6 +1,7 @@
 package controller;
 
 import DAO.DashboardDAO;
+import DTO.SesionCajaDTO;
 import DTO.UsuarioDTO;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -147,8 +148,8 @@ public class DashboardController extends HttpServlet {
             return resultado;
         }
         
-        // Sesión de caja activa
-        Map<String, Object> sesionActiva = dashboardDAO.obtenerSesionCajaActiva(usuarioId);
+        SesionCajaDTO sesion = cajaApiClient.buscarSesionAbierta(usuarioId);
+        Map<String, Object> sesionActiva = sesionToMap(sesion);
         resultado.put("sesionActiva", sesionActiva);
         resultado.put("tieneCajaAbierta", sesionActiva != null);
         
@@ -165,11 +166,12 @@ public class DashboardController extends HttpServlet {
         resultado.put("ultimasVentas", dashboardDAO.obtenerUltimasVentasUsuario(usuarioId, 5));
         
         // Alertas generales (productos con stock bajo y por vencer)
-        resultado.put("stockBajo", dashboardDAO.contarProductosStockBajo());
-        resultado.put("agotados", dashboardDAO.contarProductosAgotados());
-        resultado.put("porVencer", dashboardDAO.contarProductosPorVencer());
-        resultado.put("vencidos", dashboardDAO.contarProductosVencidos());
-        resultado.put("productosStockBajo", dashboardDAO.obtenerProductosStockBajo(5));
+        JsonObject resumen = dashboardApiClient.obtenerResumen();
+        resultado.put("stockBajo", getInt(resumen, "stockBajo"));
+        resultado.put("agotados", getInt(resumen, "agotados"));
+        resultado.put("porVencer", getInt(resumen, "porVencer"));
+        resultado.put("vencidos", getInt(resumen, "vencidos"));
+        resultado.put("productosStockBajo", dashboardApiClient.obtenerProductosStockBajo(5));
         resultado.put("productosPorVencer", dashboardApiClient.obtenerProductosPorVencer(5));
         
         // Cajas disponibles (para apertura)
@@ -181,7 +183,7 @@ public class DashboardController extends HttpServlet {
     /**
      * Obtener sesión de caja activa del usuario
      */
-    private Map<String, Object> obtenerSesionActiva(HttpServletRequest request) {
+    private Map<String, Object> obtenerSesionActiva(HttpServletRequest request) throws IOException {
         Long usuarioId = obtenerUsuarioIdSesion(request);
         if (usuarioId == null) {
             Map<String, Object> error = new HashMap<>();
@@ -189,7 +191,7 @@ public class DashboardController extends HttpServlet {
             return error;
         }
         
-        Map<String, Object> sesion = dashboardDAO.obtenerSesionCajaActiva(usuarioId);
+        Map<String, Object> sesion = sesionToMap(cajaApiClient.buscarSesionAbierta(usuarioId));
         if (sesion == null) {
             Map<String, Object> resultado = new HashMap<>();
             resultado.put("activa", false);
@@ -202,6 +204,20 @@ public class DashboardController extends HttpServlet {
         sesion.put("ventasTurno", dashboardDAO.obtenerVentasTurno(sesionId));
         
         return sesion;
+    }
+
+    private Map<String, Object> sesionToMap(SesionCajaDTO sesion) {
+        if (sesion == null) {
+            return null;
+        }
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", sesion.getId());
+        map.put("cajaId", sesion.getCajaId());
+        map.put("cajaNombre", sesion.getCajaNombre());
+        map.put("fechaApertura", sesion.getFechaApertura());
+        map.put("montoInicial", sesion.getMontoInicial());
+        map.put("estado", sesion.getEstado());
+        return map;
     }
     
     /**
