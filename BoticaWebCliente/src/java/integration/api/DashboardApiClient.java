@@ -89,6 +89,31 @@ public class DashboardApiClient {
         return toProductosAlerta(result.getJson().get("data"), false);
     }
 
+    public JsonObject obtenerVentasTurno(Long sesionId) throws IOException {
+        ApiResult result = apiClient.get("/api/dashboard/ventas-turno?sesionId=" + sesionId);
+        if (!result.isSuccess()) {
+            throw new IOException(result.getMessage());
+        }
+        return result.getJson().getAsJsonObject("data");
+    }
+
+    public JsonObject obtenerVentasDelDiaUsuario(Long usuarioId) throws IOException {
+        ApiResult result = apiClient.get("/api/dashboard/ventas-usuario-hoy?usuarioId=" + usuarioId);
+        if (!result.isSuccess()) {
+            throw new IOException(result.getMessage());
+        }
+        return result.getJson().getAsJsonObject("data");
+    }
+
+    public JsonArray obtenerUltimasVentasUsuario(Long usuarioId, int limite) throws IOException {
+        ApiResult result = apiClient.get("/api/dashboard/ultimas-ventas-usuario?usuarioId=" + usuarioId + "&limite=" + limite);
+        if (!result.isSuccess()) {
+            throw new IOException(result.getMessage());
+        }
+        JsonElement data = result.getJson().get("data");
+        return data != null && data.isJsonArray() ? data.getAsJsonArray() : new JsonArray();
+    }
+
     private List<Map<String, Object>> toProductosAlerta(JsonElement data, boolean incluirStockMinimo) {
         List<Map<String, Object>> productos = new ArrayList<>();
         if (data == null || !data.isJsonArray()) {

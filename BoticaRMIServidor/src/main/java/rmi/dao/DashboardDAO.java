@@ -6,7 +6,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import rmi.config.DatabaseConfig;
 import rmi.dto.DashboardResumenDTO;
 import rmi.dto.ProductoAlertaDTO;
@@ -134,6 +136,81 @@ public class DashboardDAO {
                 + "WHERE p.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) AND p.activo = 1 "
                 + "ORDER BY p.fecha_vencimiento ASC LIMIT ?";
         return obtenerAlertas(sql, limite, "POR_VENCER");
+    }
+
+    public Map<String, Object> obtenerVentasTurno(Long sesionCajaId) {
+        String sql = "SELECT COUNT(*) AS cantidad_ventas, COALESCE(SUM(total), 0) AS total_ventas, "
+                + "COALESCE(SUM(CASE WHEN metodo_pago = 'EFECTIVO' THEN total ELSE 0 END), 0) AS total_efectivo, "
+                + "COALESCE(SUM(CASE WHEN metodo_pago = 'YAPE_PLIN' THEN total ELSE 0 END), 0) AS total_yape_plin, "
+                + "COALESCE(SUM(CASE WHEN metodo_pago = 'TARJETA' THEN total ELSE 0 END), 0) AS total_tarjeta, "
+                + "COALESCE(SUM(CASE WHEN metodo_pago = 'MIXTO' THEN total ELSE 0 END), 0) AS total_mixto, "
+                + "COALESCE(SUM(monto_efectivo), 0) AS efectivo_recibido, COALESCE(SUM(vuelto), 0) AS total_vueltos "
+                + "FROM transacciones WHERE sesion_caja_id = ? AND tipo_transaccion_id = 2 AND estado = 'COMPLETADA'";
+        Map<String, Object> resultado = new HashMap<>();
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setLong(1, sesionCajaId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    resultado.put("cantidadVentas", rs.getInt("cantidad_ventas"));
+                    resultado.put("totalVentas", rs.getBigDecimal("total_ventas"));
+                    resultado.put("totalEfectivo", rs.getBigDecimal("total_efectivo"));
+                    resultado.put("totalYapePlin", rs.getBigDecimal("total_yape_plin"));
+                    resultado.put("totalTarjeta", rs.getBigDecimal("total_tarjeta"));
+                    resultado.put("totalMixto", rs.getBigDecimal("total_mixto"));
+                    resultado.put("efectivoRecibido", rs.getBigDecimal("efectivo_recibido"));
+                    resultado.put("totalVueltos", rs.getBigDecimal("total_vueltos"));
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al obtener ventas del turno", ex);
+        }
+        return resultado;
+    }
+
+    public Map<String, Object> obtenerVentasDelDiaUsuario(Long usuarioId) {
+        String sql = "SELECT COUNT(*) AS cantidad_ventas, COALESCE(SUM(total), 0) AS total_ventas "
+                + "FROM transacciones WHERE usuario_id = ? AND tipo_transaccion_id = 2 "
+                + "AND DATE(fecha) = CURDATE() AND estado = 'COMPLETADA'";
+        Map<String, Object> resultado = new HashMap<>();
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setLong(1, usuarioId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    resultado.put("cantidadVentas", rs.getInt("cantidad_ventas"));
+                    resultado.put("totalVentas", rs.getBigDecimal("total_ventas"));
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al obtener ventas del dia del usuario", ex);
+        }
+        return resultado;
+    }
+
+    public List<Map<String, Object>> obtenerUltimasVentasUsuario(Long usuarioId, int limite) {
+        String sql = "SELECT t.numero_transaccion, t.fecha, t.total, t.metodo_pago "
+                + "FROM transacciones t WHERE t.usuario_id = ? AND t.tipo_transaccion_id = 2 "
+                + "AND t.estado = 'COMPLETADA' ORDER BY t.fecha DESC LIMIT ?";
+        List<Map<String, Object>> ventas = new ArrayList<>();
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setLong(1, usuarioId);
+            ps.setInt(2, limite <= 0 ? 5 : limite);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> venta = new HashMap<>();
+                    venta.put("numero", rs.getString("numero_transaccion"));
+                    venta.put("fecha", rs.getTimestamp("fecha"));
+                    venta.put("total", rs.getBigDecimal("total"));
+                    venta.put("metodoPago", rs.getString("metodo_pago"));
+                    ventas.add(venta);
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al obtener ultimas ventas del usuario", ex);
+        }
+        return ventas;
     }
 
     private BigDecimal obtenerDecimal(String sql) {
