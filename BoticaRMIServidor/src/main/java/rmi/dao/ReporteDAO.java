@@ -6,7 +6,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import rmi.config.DatabaseConfig;
 import rmi.dto.ProductoVendidoDTO;
 import rmi.dto.ResumenVentasDTO;
@@ -106,6 +108,92 @@ public class ReporteDAO {
             throw new IllegalStateException("Error al obtener productos mas vendidos", ex);
         }
         return productos;
+    }
+
+    public List<Map<String, Object>> obtenerProductosPorVencer(int diasDesde, int diasHasta) {
+        String sql = "SELECT p.id, c.nombre_comercial, c.concentracion, c.laboratorio, p.lote, "
+                + "p.fecha_vencimiento, p.stock_actual, p.precio_venta, "
+                + "DATEDIFF(p.fecha_vencimiento, CURDATE()) AS dias_restantes "
+                + "FROM productos p "
+                + "INNER JOIN catalogo_productos_digemid c ON p.catalogo_producto_id = c.id "
+                + "WHERE p.activo = 1 "
+                + "AND DATEDIFF(p.fecha_vencimiento, CURDATE()) >= ? "
+                + "AND DATEDIFF(p.fecha_vencimiento, CURDATE()) <= ? "
+                + "ORDER BY p.fecha_vencimiento ASC";
+        List<Map<String, Object>> productos = new ArrayList<>();
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, diasDesde);
+            ps.setInt(2, diasHasta);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    productos.add(mapearProductoVencimiento(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al obtener productos por vencer", ex);
+        }
+        return productos;
+    }
+
+    public List<Map<String, Object>> obtenerProductosPorVencerRango(String fechaDesde, String fechaHasta) {
+        String sql = "SELECT p.id, c.nombre_comercial, c.concentracion, c.laboratorio, p.lote, "
+                + "p.fecha_vencimiento, p.stock_actual, p.precio_venta, "
+                + "DATEDIFF(p.fecha_vencimiento, CURDATE()) AS dias_restantes "
+                + "FROM productos p "
+                + "INNER JOIN catalogo_productos_digemid c ON p.catalogo_producto_id = c.id "
+                + "WHERE p.activo = 1 AND p.fecha_vencimiento >= ? AND p.fecha_vencimiento <= ? "
+                + "ORDER BY p.fecha_vencimiento ASC";
+        List<Map<String, Object>> productos = new ArrayList<>();
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setDate(1, Date.valueOf(fechaDesde));
+            ps.setDate(2, Date.valueOf(fechaHasta));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    productos.add(mapearProductoVencimiento(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al obtener productos por vencer por rango", ex);
+        }
+        return productos;
+    }
+
+    public Map<String, Integer> contarVencimientosPorCriticidad() {
+        String sql = "SELECT "
+                + "SUM(CASE WHEN DATEDIFF(fecha_vencimiento, CURDATE()) < 0 THEN 1 ELSE 0 END) AS vencidos, "
+                + "SUM(CASE WHEN DATEDIFF(fecha_vencimiento, CURDATE()) BETWEEN 0 AND 9 THEN 1 ELSE 0 END) AS critico, "
+                + "SUM(CASE WHEN DATEDIFF(fecha_vencimiento, CURDATE()) BETWEEN 10 AND 20 THEN 1 ELSE 0 END) AS moderado, "
+                + "SUM(CASE WHEN DATEDIFF(fecha_vencimiento, CURDATE()) BETWEEN 21 AND 30 THEN 1 ELSE 0 END) AS normal "
+                + "FROM productos WHERE activo = 1";
+        Map<String, Integer> conteo = new HashMap<>();
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                conteo.put("vencidos", rs.getInt("vencidos"));
+                conteo.put("critico", rs.getInt("critico"));
+                conteo.put("moderado", rs.getInt("moderado"));
+                conteo.put("normal", rs.getInt("normal"));
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al contar criticidad de vencimientos", ex);
+        }
+        return conteo;
+    }
+
+    private Map<String, Object> mapearProductoVencimiento(ResultSet rs) throws SQLException {
+        Map<String, Object> producto = new HashMap<>();
+        producto.put("id", rs.getLong("id"));
+        producto.put("nombre", construirNombre(rs.getString("nombre_comercial"), rs.getString("concentracion")));
+        producto.put("laboratorio", rs.getString("laboratorio"));
+        producto.put("lote", rs.getString("lote"));
+        producto.put("fechaVencimiento", rs.getDate("fecha_vencimiento"));
+        producto.put("stockActual", rs.getInt("stock_actual"));
+        producto.put("precioVenta", rs.getBigDecimal("precio_venta"));
+        producto.put("diasRestantes", rs.getInt("dias_restantes"));
+        return producto;
     }
 
     private List<TransaccionDTO> listarTransaccionesPorFecha(Long tipoTransaccionId, String fechaInicio, String fechaFin) {

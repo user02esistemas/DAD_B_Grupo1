@@ -17,7 +17,10 @@ import rmi.reportes.ReporteServiceRMI;
 
 @WebServlet(name = "ReporteApiServlet", urlPatterns = {
     "/api/reportes/ventas",
-    "/api/reportes/productos-mas-vendidos"
+    "/api/reportes/productos-mas-vendidos",
+    "/api/reportes/vencimientos",
+    "/api/reportes/vencimientos-rango",
+    "/api/reportes/vencimientos/criticidad"
 })
 public class ReporteApiServlet extends HttpServlet {
 
@@ -37,6 +40,34 @@ public class ReporteApiServlet extends HttpServlet {
                 int limite = parseLimite(request.getParameter("limite"));
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().write(gson.toJson(ApiResponse.ok("Productos mas vendidos", reporteService.obtenerProductosMasVendidos(limite))));
+                return;
+            }
+
+            if ("/api/reportes/vencimientos".equals(path)) {
+                int diasDesde = parseInt(request.getParameter("diasDesde"), 0);
+                int diasHasta = parseInt(request.getParameter("diasHasta"), 30);
+                Map<String, Object> reporte = new LinkedHashMap<>();
+                reporte.put("productos", reporteService.obtenerProductosPorVencer(diasDesde, diasHasta));
+                reporte.put("criticidad", reporteService.contarVencimientosPorCriticidad());
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write(gson.toJson(ApiResponse.ok("Reporte de vencimientos", reporte)));
+                return;
+            }
+
+            if ("/api/reportes/vencimientos-rango".equals(path)) {
+                String desde = validarFecha(request.getParameter("desde"), "desde");
+                String hasta = validarFecha(request.getParameter("hasta"), "hasta");
+                Map<String, Object> reporte = new LinkedHashMap<>();
+                reporte.put("productos", reporteService.obtenerProductosPorVencerRango(desde, hasta));
+                reporte.put("criticidad", reporteService.contarVencimientosPorCriticidad());
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write(gson.toJson(ApiResponse.ok("Reporte de vencimientos", reporte)));
+                return;
+            }
+
+            if ("/api/reportes/vencimientos/criticidad".equals(path)) {
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write(gson.toJson(ApiResponse.ok("Criticidad de vencimientos", reporteService.contarVencimientosPorCriticidad())));
                 return;
             }
 
@@ -72,10 +103,14 @@ public class ReporteApiServlet extends HttpServlet {
     }
 
     private int parseLimite(String value) {
+        return parseInt(value, 10);
+    }
+
+    private int parseInt(String value, int defaultValue) {
         try {
-            return value == null ? 10 : Integer.parseInt(value);
+            return value == null ? defaultValue : Integer.parseInt(value);
         } catch (NumberFormatException ex) {
-            return 10;
+            return defaultValue;
         }
     }
 }

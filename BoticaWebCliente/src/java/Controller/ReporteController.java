@@ -59,7 +59,7 @@ public class ReporteController extends HttpServlet {
                     out.print(gson.toJson(reporteVencimientoRango(request)));
                     break;
                 case "criticidad":
-                    out.print(gson.toJson(reporteDAO.contarPorCriticidad()));
+                    out.print(gson.toJson(reporteApiClient.obtenerCriticidadVencimientos()));
                     break;
 
                 // ========== REPORTE CAJA ==========
@@ -110,27 +110,20 @@ public class ReporteController extends HttpServlet {
     // =====================================================
     //     MÉTODOS DE REPORTE
     // =====================================================
-    private Map<String, Object> reporteVencimiento(HttpServletRequest request) {
+    private JsonObject reporteVencimiento(HttpServletRequest request) throws IOException {
         int diasDesde = getIntParam(request, "diasDesde", 0);
         int diasHasta = getIntParam(request, "diasHasta", 30);
-
-        Map<String, Object> resultado = new HashMap<>();
-        resultado.put("productos", reporteDAO.obtenerProductosPorVencer(diasDesde, diasHasta));
-        resultado.put("criticidad", reporteDAO.contarPorCriticidad());
-        return resultado;
+        return reporteApiClient.obtenerReporteVencimientos(diasDesde, diasHasta);
     }
 
-    private Map<String, Object> reporteVencimientoRango(HttpServletRequest request) throws ParseException {
+    private JsonObject reporteVencimientoRango(HttpServletRequest request) throws ParseException, IOException {
         String fechaDesdeStr = request.getParameter("fechaDesde");
         String fechaHastaStr = request.getParameter("fechaHasta");
 
         Date fechaDesde = fechaDesdeStr != null ? sdf.parse(fechaDesdeStr) : new Date();
         Date fechaHasta = fechaHastaStr != null ? sdf.parse(fechaHastaStr) : sumarDias(new Date(), 30);
 
-        Map<String, Object> resultado = new HashMap<>();
-        resultado.put("productos", reporteDAO.obtenerProductosPorVencerRango(fechaDesde, fechaHasta));
-        resultado.put("criticidad", reporteDAO.contarPorCriticidad());
-        return resultado;
+        return reporteApiClient.obtenerReporteVencimientosRango(sdf.format(fechaDesde), sdf.format(fechaHasta));
     }
 
     private List<Map<String, Object>> reporteSesionesCaja(HttpServletRequest request) throws ParseException {
@@ -144,39 +137,10 @@ public class ReporteController extends HttpServlet {
         return reporteDAO.listarSesionesCaja(fechaDesde, fechaHasta, usuarioId);
     }
 
-    private Map<String, Object> reporteResumenVentas(HttpServletRequest request) throws ParseException {
-        String fechaDesdeStr = request.getParameter("fechaDesde");
-        String fechaHastaStr = request.getParameter("fechaHasta");
-
-        Date fechaDesde = fechaDesdeStr != null && !fechaDesdeStr.isEmpty()
-                ? sdf.parse(fechaDesdeStr) : obtenerPrimerDiaMes();
-        Date fechaHasta = fechaHastaStr != null && !fechaHastaStr.isEmpty()
-                ? sdf.parse(fechaHastaStr) : new Date();
-
-        Map<String, Object> resultado = reporteDAO.obtenerResumenVentas(fechaDesde, fechaHasta);
-        resultado.put("ventasPorDia", reporteDAO.obtenerVentasPorDia(fechaDesde, fechaHasta));
-        return resultado;
-    }
-
     private JsonObject reporteResumenVentasApi(HttpServletRequest request) throws ParseException, IOException {
         JsonObject data = obtenerReporteVentasApi(request, obtenerPrimerDiaMes(), new Date());
         JsonObject resultado = data.getAsJsonObject("resumen").deepCopy();
         resultado.add("ventasPorDia", normalizarVentasPorDia(data.getAsJsonArray("ventasPorDia")));
-        return resultado;
-    }
-
-    private Map<String, Object> reporteListarVentas(HttpServletRequest request) throws ParseException {
-        String fechaDesdeStr = request.getParameter("fechaDesde");
-        String fechaHastaStr = request.getParameter("fechaHasta");
-
-        Date fechaDesde = fechaDesdeStr != null && !fechaDesdeStr.isEmpty()
-                ? sdf.parse(fechaDesdeStr) : obtenerPrimerDiaMes();
-        Date fechaHasta = fechaHastaStr != null && !fechaHastaStr.isEmpty()
-                ? sdf.parse(fechaHastaStr) : new Date();
-
-        Map<String, Object> resultado = new HashMap<>();
-        resultado.put("resumen", reporteDAO.obtenerResumenVentas(fechaDesde, fechaHasta));
-        resultado.put("ventas", reporteDAO.listarVentas(fechaDesde, fechaHasta));
         return resultado;
     }
 
@@ -186,18 +150,6 @@ public class ReporteController extends HttpServlet {
         resultado.add("resumen", data.getAsJsonObject("resumen"));
         resultado.add("ventas", normalizarVentas(data.getAsJsonArray("ventas")));
         return resultado;
-    }
-
-    private List<Map<String, Object>> reporteVentasPorDia(HttpServletRequest request) throws ParseException {
-        String fechaDesdeStr = request.getParameter("fechaDesde");
-        String fechaHastaStr = request.getParameter("fechaHasta");
-
-        Date fechaDesde = fechaDesdeStr != null && !fechaDesdeStr.isEmpty()
-                ? sdf.parse(fechaDesdeStr) : sumarDias(new Date(), -7);
-        Date fechaHasta = fechaHastaStr != null && !fechaHastaStr.isEmpty()
-                ? sdf.parse(fechaHastaStr) : new Date();
-
-        return reporteDAO.obtenerVentasPorDia(fechaDesde, fechaHasta);
     }
 
     private JsonArray reporteVentasPorDiaApi(HttpServletRequest request) throws ParseException, IOException {

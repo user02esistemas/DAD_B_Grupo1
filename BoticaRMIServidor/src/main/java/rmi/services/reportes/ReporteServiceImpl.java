@@ -3,6 +3,7 @@ package rmi.services.reportes;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
+import java.util.Map;
 import rmi.dao.ReporteDAO;
 import rmi.dto.ProductoVendidoDTO;
 import rmi.dto.ResumenVentasDTO;
@@ -41,5 +42,20 @@ public class ReporteServiceImpl extends UnicastRemoteObject implements ReporteSe
     @Override
     public List<ProductoVendidoDTO> obtenerProductosMasVendidos(int limite) throws RemoteException {
         return reporteDAO.obtenerProductosMasVendidos(limite);
+    }
+
+    @Override
+    public List<Map<String, Object>> obtenerProductosPorVencer(int diasDesde, int diasHasta) throws RemoteException {
+        return reporteDAO.obtenerProductosPorVencer(diasDesde, diasHasta);
+    }
+
+    @Override
+    public List<Map<String, Object>> obtenerProductosPorVencerRango(String fechaDesde, String fechaHasta) throws RemoteException {
+        return reporteDAO.obtenerProductosPorVencerRango(fechaDesde, fechaHasta);
+    }
+
+    @Override
+    public Map<String, Integer> contarVencimientosPorCriticidad() throws RemoteException {
+        return reporteDAO.contarVencimientosPorCriticidad();
     }
 }
