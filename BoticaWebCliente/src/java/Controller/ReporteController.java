@@ -1,12 +1,14 @@
 package controller;
 
 import DAO.ReporteDAO;
+import DTO.UsuarioDTO;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import integration.api.ReporteApiClient;
+import integration.api.UsuarioApiClient;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -29,6 +31,7 @@ public class ReporteController extends HttpServlet {
 
     private final ReporteDAO reporteDAO = new ReporteDAO();
     private final ReporteApiClient reporteApiClient = new ReporteApiClient();
+    private final UsuarioApiClient usuarioApiClient = new UsuarioApiClient();
     private final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss").create();
     private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -88,7 +91,7 @@ public class ReporteController extends HttpServlet {
 
                 // ========== DATOS AUXILIARES ==========
                 case "usuarios":
-                    out.print(gson.toJson(reporteDAO.listarUsuariosActivos()));
+                    out.print(gson.toJson(listarUsuariosActivosApi()));
                     break;
 
                 default:
@@ -257,6 +260,20 @@ public class ReporteController extends HttpServlet {
         if (origen.has(origenKey) && !origen.get(origenKey).isJsonNull()) {
             destino.add(destinoKey, origen.get(origenKey));
         }
+    }
+
+    private JsonArray listarUsuariosActivosApi() throws IOException {
+        JsonArray usuarios = new JsonArray();
+        for (UsuarioDTO usuario : usuarioApiClient.listarTodos()) {
+            if (!usuario.isActivo()) {
+                continue;
+            }
+            JsonObject item = new JsonObject();
+            item.addProperty("id", usuario.getId());
+            item.addProperty("nombre", usuario.getNombreCompleto());
+            usuarios.add(item);
+        }
+        return usuarios;
     }
 
     // =====================================================
