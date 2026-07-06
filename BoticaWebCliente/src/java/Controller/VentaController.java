@@ -1,17 +1,13 @@
 package controller;
 
-import DAO.ProductoDAO;
-import DAO.SesionCajaDAO;
-import DAO.TransaccionDAO;
-import DTO.ProductoDTO;
 import DTO.SesionCajaDTO;
-import DTO.TransaccionDTO;
 import DTO.DetalleTransaccionDTO;
 import DTO.UsuarioDTO;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import integration.api.CajaApiClient;
+import integration.api.ProductoApiClient;
 import integration.api.VentaApiClient;
 
 import jakarta.servlet.ServletException;
@@ -45,6 +41,7 @@ public class VentaController extends HttpServlet {
 
     private final Gson gson = new Gson();
     private final CajaApiClient cajaApiClient = new CajaApiClient();
+    private final ProductoApiClient productoApiClient = new ProductoApiClient();
     private final VentaApiClient ventaApiClient = new VentaApiClient();
     private static final BigDecimal FACTOR_IGV = new BigDecimal("1.18");
 
@@ -128,23 +125,22 @@ public class VentaController extends HttpServlet {
                 return;
             }
 
-            ProductoDAO dao = new ProductoDAO();
-            List<ProductoDTO> productos = dao.buscarParaVenta(termino.trim(), 15);
+            List<ProductoApiClient.ProductoVenta> productos = productoApiClient.buscarParaVenta(termino.trim(), 15);
 
             JsonArray jsonArray = new JsonArray();
-            for (ProductoDTO p : productos) {
+            for (ProductoApiClient.ProductoVenta p : productos) {
                 JsonObject obj = new JsonObject();
-                obj.addProperty("id", p.getId());
-                obj.addProperty("catalogoId", p.getCatalogoProductoId());
-                obj.addProperty("nombre", p.getCatalogoProducto().getNombreComercial());
-                obj.addProperty("concentracion", p.getCatalogoProducto().getConcentracion());
-                obj.addProperty("presentacion", p.getCatalogoProducto().getPresentacion());
-                obj.addProperty("laboratorio", p.getCatalogoProducto().getLaboratorio());
-                obj.addProperty("lote", p.getLote());
-                obj.addProperty("fechaVencimiento", p.getFechaVencimiento().toString());
-                obj.addProperty("stock", p.getStockActual());
-                obj.addProperty("precioVenta", p.getPrecioVenta());
-                obj.addProperty("precioCompra", p.getPrecioCompra());
+                obj.addProperty("id", p.id);
+                obj.addProperty("catalogoId", p.catalogoProductoId);
+                obj.addProperty("nombre", p.nombreComercial);
+                obj.addProperty("concentracion", p.concentracion);
+                obj.addProperty("presentacion", p.presentacion);
+                obj.addProperty("laboratorio", p.laboratorio);
+                obj.addProperty("lote", p.lote);
+                obj.addProperty("fechaVencimiento", p.fechaVencimiento);
+                obj.addProperty("stock", p.stockActual);
+                obj.addProperty("precioVenta", p.precioVenta);
+                obj.addProperty("precioCompra", p.precioCompra);
                 jsonArray.add(obj);
             }
 
@@ -176,19 +172,18 @@ public class VentaController extends HttpServlet {
             }
 
             Long id = Long.parseLong(idStr);
-            ProductoDAO dao = new ProductoDAO();
-            ProductoDTO p = dao.buscarPorId(id);
+            ProductoApiClient.ProductoVenta p = productoApiClient.buscarVentaPorId(id);
 
             if (p != null) {
                 json.addProperty("success", true);
-                json.addProperty("id", p.getId());
-                json.addProperty("nombre", p.getCatalogoProducto().getNombreComercial());
-                json.addProperty("concentracion", p.getCatalogoProducto().getConcentracion());
-                json.addProperty("presentacion", p.getCatalogoProducto().getPresentacion());
-                json.addProperty("laboratorio", p.getCatalogoProducto().getLaboratorio());
-                json.addProperty("lote", p.getLote());
-                json.addProperty("stock", p.getStockActual());
-                json.addProperty("precioVenta", p.getPrecioVenta());
+                json.addProperty("id", p.id);
+                json.addProperty("nombre", p.nombreComercial);
+                json.addProperty("concentracion", p.concentracion);
+                json.addProperty("presentacion", p.presentacion);
+                json.addProperty("laboratorio", p.laboratorio);
+                json.addProperty("lote", p.lote);
+                json.addProperty("stock", p.stockActual);
+                json.addProperty("precioVenta", p.precioVenta);
             } else {
                 json.addProperty("success", false);
                 json.addProperty("message", "Producto no encontrado");
@@ -219,41 +214,35 @@ public class VentaController extends HttpServlet {
             }
 
             Long id = Long.parseLong(idStr);
-            TransaccionDAO dao = new TransaccionDAO();
-            TransaccionDTO venta = dao.buscarPorId(id);
-
-            if (venta == null) {
-                enviarError(response, "Venta no encontrada");
-                return;
-            }
-
-            venta.setDetalles(dao.obtenerDetalles(id));
+            JsonObject venta = ventaApiClient.buscarPorId(id);
 
             JsonObject json = new JsonObject();
             json.addProperty("success", true);
 
             JsonObject ventaObj = new JsonObject();
-            ventaObj.addProperty("id", venta.getId());
-            ventaObj.addProperty("numeroTransaccion", venta.getNumeroTransaccion());
-            ventaObj.addProperty("fecha", venta.getFecha().toString());
-            ventaObj.addProperty("cliente", venta.getCliente());
-            ventaObj.addProperty("tipoComprobante", venta.getTipoComprobante());
-            ventaObj.addProperty("metodoPago", venta.getMetodoPago());
-            ventaObj.addProperty("montoEfectivo", venta.getMontoEfectivo());
-            ventaObj.addProperty("montoVirtual", venta.getMontoVirtual());
-            ventaObj.addProperty("medioPagoVirtual", venta.getMedioPagoVirtual());
-            ventaObj.addProperty("vuelto", venta.getVuelto());
-            ventaObj.addProperty("subtotal", venta.getSubtotal());
-            ventaObj.addProperty("igv", venta.getIgv());
-            ventaObj.addProperty("total", venta.getTotal());
+            ventaObj.addProperty("id", getLong(venta, "id"));
+            ventaObj.addProperty("numeroTransaccion", getString(venta, "numeroTransaccion"));
+            ventaObj.addProperty("fecha", getString(venta, "fecha"));
+            ventaObj.addProperty("cliente", getString(venta, "cliente") != null ? getString(venta, "cliente") : getString(venta, "nombrePersona"));
+            ventaObj.addProperty("tipoComprobante", getString(venta, "tipoComprobante"));
+            ventaObj.addProperty("metodoPago", getString(venta, "metodoPago"));
+            ventaObj.add("montoEfectivo", venta.get("montoEfectivo"));
+            ventaObj.add("montoVirtual", venta.get("montoVirtual"));
+            ventaObj.addProperty("medioPagoVirtual", getString(venta, "medioPagoVirtual"));
+            ventaObj.add("vuelto", venta.get("vuelto"));
+            ventaObj.add("subtotal", venta.get("subtotal"));
+            ventaObj.add("igv", venta.get("igv"));
+            ventaObj.add("total", venta.get("total"));
 
             JsonArray detallesArray = new JsonArray();
-            for (DetalleTransaccionDTO detalle : venta.getDetalles()) {
+            JsonArray detalles = venta.getAsJsonArray("detalles");
+            if (detalles != null) for (int i = 0; i < detalles.size(); i++) {
+                JsonObject detalle = detalles.get(i).getAsJsonObject();
                 JsonObject detalleObj = new JsonObject();
-                detalleObj.addProperty("productoNombre", detalle.getNombreComercial() + " " + detalle.getConcentracion());
-                detalleObj.addProperty("cantidad", detalle.getCantidad());
-                detalleObj.addProperty("precioUnitario", detalle.getPrecioUnitario());
-                detalleObj.addProperty("subtotal", detalle.getSubtotal());
+                detalleObj.addProperty("productoNombre", getString(detalle, "nombreComercial") + " " + getString(detalle, "concentracion"));
+                detalleObj.add("cantidad", detalle.get("cantidad"));
+                detalleObj.add("precioUnitario", detalle.get("precioUnitario"));
+                detalleObj.add("subtotal", detalle.get("subtotal"));
                 detallesArray.add(detalleObj);
             }
             ventaObj.add("detalles", detallesArray);
@@ -320,7 +309,6 @@ public class VentaController extends HttpServlet {
             // Calcular totales
             BigDecimal totalCalculado = BigDecimal.ZERO;
             List<DetalleTransaccionDTO> detalles = new ArrayList<>();
-            ProductoDAO productoDAO = new ProductoDAO();
 
             for (int i = 0; i < productosArray.size(); i++) {
                 JsonObject prod = productosArray.get(i).getAsJsonObject();
@@ -329,11 +317,11 @@ public class VentaController extends HttpServlet {
                 BigDecimal precioUnit = new BigDecimal(prod.get("precioUnitario").getAsString());
 
                 // Validar stock
-                ProductoDTO producto = productoDAO.buscarPorId(productoId);
-                if (producto == null || producto.getStockActual() < cantidad) {
+                ProductoApiClient.ProductoVenta producto = productoApiClient.buscarVentaPorId(productoId);
+                if (producto == null || producto.stockActual < cantidad) {
                     json.addProperty("success", false);
                     json.addProperty("message", "Stock insuficiente para " +
-                            (producto != null ? producto.getCatalogoProducto().getNombreComercial() : "producto"));
+                            (producto != null ? producto.nombreComercial : "producto"));
                     out.print(json.toString());
                     return;
                 }
@@ -475,8 +463,7 @@ public class VentaController extends HttpServlet {
                 return;
             }
 
-            SesionCajaDAO sesionDAO = new SesionCajaDAO();
-            SesionCajaDTO sesion = sesionDAO.buscarSesionAbierta(usuario.getId());
+            SesionCajaDTO sesion = cajaApiClient.buscarSesionAbierta(usuario.getId());
 
             if (sesion != null) {
                 json.addProperty("success", true);
@@ -514,10 +501,7 @@ public class VentaController extends HttpServlet {
                 return;
             }
 
-            SesionCajaDAO sesionDAO = new SesionCajaDAO();
-            
-            // Verificar que no tenga caja abierta
-            if (sesionDAO.tieneSesionAbierta(usuario.getId())) {
+            if (cajaApiClient.buscarSesionAbierta(usuario.getId()) != null) {
                 json.addProperty("success", false);
                 json.addProperty("message", "Ya tiene una caja abierta");
                 out.print(json.toString());
@@ -527,17 +511,11 @@ public class VentaController extends HttpServlet {
             // Obtener monto inicial
             BigDecimal montoInicial = parseBigDecimal(request.getParameter("montoInicial"));
 
-            // Crear sesión de caja
-            SesionCajaDTO nuevaSesion = new SesionCajaDTO();
-            nuevaSesion.setCajaId(1L); // Caja Principal por defecto
-            nuevaSesion.setUsuarioId(usuario.getId());
-            nuevaSesion.setMontoInicial(montoInicial);
+            SesionCajaDTO nuevaSesion = cajaApiClient.abrir(usuario.getId(), 1L, montoInicial);
 
-            Long sesionId = sesionDAO.abrirSesion(nuevaSesion);
-
-            if (sesionId != null) {
+            if (nuevaSesion != null && nuevaSesion.getId() != null) {
                 json.addProperty("success", true);
-                json.addProperty("sesionId", sesionId);
+                json.addProperty("sesionId", nuevaSesion.getId());
                 json.addProperty("message", "Caja abierta correctamente");
             } else {
                 json.addProperty("success", false);
@@ -569,8 +547,7 @@ public class VentaController extends HttpServlet {
                 return;
             }
 
-            SesionCajaDAO sesionDAO = new SesionCajaDAO();
-            SesionCajaDTO sesion = sesionDAO.buscarSesionAbierta(usuario.getId());
+            SesionCajaDTO sesion = cajaApiClient.buscarSesionAbierta(usuario.getId());
 
             if (sesion == null) {
                 json.addProperty("success", false);
@@ -579,8 +556,7 @@ public class VentaController extends HttpServlet {
                 return;
             }
 
-            // Obtener resumen con totales calculados
-            SesionCajaDTO resumen = sesionDAO.obtenerResumenSesion(sesion.getId());
+            SesionCajaDTO resumen = sesion;
 
             json.addProperty("success", true);
             json.addProperty("sesionId", sesion.getId());
@@ -617,8 +593,7 @@ public class VentaController extends HttpServlet {
                 return;
             }
 
-            SesionCajaDAO sesionDAO = new SesionCajaDAO();
-            SesionCajaDTO sesion = sesionDAO.buscarSesionAbierta(usuario.getId());
+            SesionCajaDTO sesion = cajaApiClient.buscarSesionAbierta(usuario.getId());
 
             if (sesion == null) {
                 json.addProperty("success", false);
@@ -627,37 +602,25 @@ public class VentaController extends HttpServlet {
                 return;
             }
 
-            // Obtener resumen actualizado
-            SesionCajaDTO resumen = sesionDAO.obtenerResumenSesion(sesion.getId());
+            SesionCajaDTO resumen = sesion;
 
             // Obtener monto final contado
             BigDecimal montoFinal = parseBigDecimal(request.getParameter("montoFinal"));
             String observaciones = request.getParameter("observaciones");
 
-            // Preparar cierre
-            resumen.setMontoFinal(montoFinal);
-            resumen.setObservaciones(observaciones);
+            cajaApiClient.cerrar(usuario.getId(), montoFinal, observaciones);
+            BigDecimal diferencia = montoFinal.subtract(resumen.getEfectivoEsperado());
 
-            // Cerrar sesión
-            boolean cerrado = sesionDAO.cerrarSesion(resumen);
+            json.addProperty("success", true);
+            json.addProperty("message", "Caja cerrada correctamente");
+            json.addProperty("diferencia", diferencia);
 
-            if (cerrado) {
-                BigDecimal diferencia = montoFinal.subtract(resumen.getEfectivoEsperado());
-                
-                json.addProperty("success", true);
-                json.addProperty("message", "Caja cerrada correctamente");
-                json.addProperty("diferencia", diferencia);
-                
-                if (diferencia.compareTo(BigDecimal.ZERO) > 0) {
-                    json.addProperty("tipoDiferencia", "SOBRANTE");
-                } else if (diferencia.compareTo(BigDecimal.ZERO) < 0) {
-                    json.addProperty("tipoDiferencia", "FALTANTE");
-                } else {
-                    json.addProperty("tipoDiferencia", "CUADRADO");
-                }
+            if (diferencia.compareTo(BigDecimal.ZERO) > 0) {
+                json.addProperty("tipoDiferencia", "SOBRANTE");
+            } else if (diferencia.compareTo(BigDecimal.ZERO) < 0) {
+                json.addProperty("tipoDiferencia", "FALTANTE");
             } else {
-                json.addProperty("success", false);
-                json.addProperty("message", "No se pudo cerrar la caja");
+                json.addProperty("tipoDiferencia", "CUADRADO");
             }
         } catch (Exception e) {
             json.addProperty("success", false);

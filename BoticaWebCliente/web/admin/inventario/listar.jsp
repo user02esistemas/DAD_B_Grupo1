@@ -6,7 +6,7 @@
 --%>
 
 <%@ page contentType="text/html" pageEncoding="UTF-8"%>
-<%@ page import="DAO.MovimientoInventarioDAO, DTO.MovimientoInventarioDTO, java.util.List, java.text.SimpleDateFormat" %>
+<%@ page import="DTO.MovimientoInventarioDTO, integration.api.InventarioApiClient, java.util.List, java.text.SimpleDateFormat" %>
 <%
     request.setAttribute("pageTitle", "Inventario - Sistema Botica");
     
@@ -26,20 +26,18 @@
         }
     }
     
-    // Obtener datos usando DAO directamente
-    MovimientoInventarioDAO movimientoDAO = new MovimientoInventarioDAO();
+    InventarioApiClient inventarioApiClient = new InventarioApiClient();
     List<MovimientoInventarioDTO> movimientos;
     int totalRegistros;
-    
+
     if (busqueda != null && !busqueda.trim().isEmpty()) {
         busqueda = busqueda.trim();
-        movimientos = movimientoDAO.buscar(busqueda, pagina, porPagina);
-        totalRegistros = movimientoDAO.contarBusqueda(busqueda);
     } else {
-        movimientos = movimientoDAO.listarTodos(pagina, porPagina);
-        totalRegistros = movimientoDAO.contarTodos();
         busqueda = "";
     }
+    InventarioApiClient.MovimientosResult resultadoMovimientos = inventarioApiClient.listarMovimientos(busqueda, pagina, porPagina);
+    movimientos = resultadoMovimientos.getMovimientos();
+    totalRegistros = resultadoMovimientos.getTotal();
     
     int totalPaginas = (int) Math.ceil((double) totalRegistros / porPagina);
     if (totalPaginas < 1) totalPaginas = 1;

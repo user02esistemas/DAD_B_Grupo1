@@ -1,8 +1,13 @@
 package controller;
 
-import DAO.ReporteDAO;
+import DTO.UsuarioDTO;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import integration.api.ReporteApiClient;
+import integration.api.UsuarioApiClient;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -14,7 +19,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -23,7 +27,8 @@ import java.util.Map;
 @WebServlet(name = "ReporteController", urlPatterns = {"/ReporteController"})
 public class ReporteController extends HttpServlet {
 
-    private final ReporteDAO reporteDAO = new ReporteDAO();
+    private final ReporteApiClient reporteApiClient = new ReporteApiClient();
+    private final UsuarioApiClient usuarioApiClient = new UsuarioApiClient();
     private final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss").create();
     private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -51,7 +56,7 @@ public class ReporteController extends HttpServlet {
                     out.print(gson.toJson(reporteVencimientoRango(request)));
                     break;
                 case "criticidad":
-                    out.print(gson.toJson(reporteDAO.contarPorCriticidad()));
+                    out.print(gson.toJson(reporteApiClient.obtenerCriticidadVencimientos()));
                     break;
 
                 // ========== REPORTE CAJA ==========
@@ -61,9 +66,7 @@ public class ReporteController extends HttpServlet {
                 case "detalleSesion":
                     Long sesionId = getLongParam(request, "sesionId", null);
                     if (sesionId != null) {
-                        Map<String, Object> detalle = reporteDAO.obtenerDetalleSesionCaja(sesionId);
-                        detalle.put("ventas", reporteDAO.obtenerVentasSesion(sesionId));
-                        out.print(gson.toJson(detalle));
+                        out.print(gson.toJson(reporteApiClient.obtenerDetalleSesionCaja(sesionId)));
                     } else {
                         response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                         out.print("{\"error\": \"Se requiere sesionId\"}");
@@ -72,18 +75,18 @@ public class ReporteController extends HttpServlet {
 
                 // ========== REPORTE VENTAS ==========
                 case "resumenVentas":
-                    out.print(gson.toJson(reporteResumenVentas(request)));
+                    out.print(gson.toJson(reporteResumenVentasApi(request)));
                     break;
                 case "listarVentas":
-                    out.print(gson.toJson(reporteListarVentas(request)));
+                    out.print(gson.toJson(reporteListarVentasApi(request)));
                     break;
                 case "ventasPorDia":
-                    out.print(gson.toJson(reporteVentasPorDia(request)));
+                    out.print(gson.toJson(reporteVentasPorDiaApi(request)));
                     break;
 
                 // ========== DATOS AUXILIARES ==========
                 case "usuarios":
-                    out.print(gson.toJson(reporteDAO.listarUsuariosActivos()));
+                    out.print(gson.toJson(listarUsuariosActivosApi()));
                     break;
 
                 default:
@@ -102,79 +105,118 @@ public class ReporteController extends HttpServlet {
     // =====================================================
     //     MÉTODOS DE REPORTE
     // =====================================================
-    private Map<String, Object> reporteVencimiento(HttpServletRequest request) {
+    private JsonObject reporteVencimiento(HttpServletRequest request) throws IOException {
         int diasDesde = getIntParam(request, "diasDesde", 0);
         int diasHasta = getIntParam(request, "diasHasta", 30);
-
-        Map<String, Object> resultado = new HashMap<>();
-        resultado.put("productos", reporteDAO.obtenerProductosPorVencer(diasDesde, diasHasta));
-        resultado.put("criticidad", reporteDAO.contarPorCriticidad());
-        return resultado;
+        return reporteApiClient.obtenerReporteVencimientos(diasDesde, diasHasta);
     }
 
-    private Map<String, Object> reporteVencimientoRango(HttpServletRequest request) throws ParseException {
+    private JsonObject reporteVencimientoRango(HttpServletRequest request) throws ParseException, IOException {
         String fechaDesdeStr = request.getParameter("fechaDesde");
         String fechaHastaStr = request.getParameter("fechaHasta");
 
         Date fechaDesde = fechaDesdeStr != null ? sdf.parse(fechaDesdeStr) : new Date();
         Date fechaHasta = fechaHastaStr != null ? sdf.parse(fechaHastaStr) : sumarDias(new Date(), 30);
 
-        Map<String, Object> resultado = new HashMap<>();
-        resultado.put("productos", reporteDAO.obtenerProductosPorVencerRango(fechaDesde, fechaHasta));
-        resultado.put("criticidad", reporteDAO.contarPorCriticidad());
-        return resultado;
+        return reporteApiClient.obtenerReporteVencimientosRango(sdf.format(fechaDesde), sdf.format(fechaHasta));
     }
 
-    private List<Map<String, Object>> reporteSesionesCaja(HttpServletRequest request) throws ParseException {
+    private JsonArray reporteSesionesCaja(HttpServletRequest request) throws IOException {
         String fechaDesdeStr = request.getParameter("fechaDesde");
         String fechaHastaStr = request.getParameter("fechaHasta");
         Long usuarioId = getLongParam(request, "usuarioId", null);
-
-        Date fechaDesde = fechaDesdeStr != null && !fechaDesdeStr.isEmpty() ? sdf.parse(fechaDesdeStr) : null;
-        Date fechaHasta = fechaHastaStr != null && !fechaHastaStr.isEmpty() ? sdf.parse(fechaHastaStr) : null;
-
-        return reporteDAO.listarSesionesCaja(fechaDesde, fechaHasta, usuarioId);
+        return reporteApiClient.obtenerSesionesCaja(fechaDesdeStr, fechaHastaStr, usuarioId).getAsJsonArray("sesiones");
     }
 
-    private Map<String, Object> reporteResumenVentas(HttpServletRequest request) throws ParseException {
-        String fechaDesdeStr = request.getParameter("fechaDesde");
-        String fechaHastaStr = request.getParameter("fechaHasta");
-
-        Date fechaDesde = fechaDesdeStr != null && !fechaDesdeStr.isEmpty()
-                ? sdf.parse(fechaDesdeStr) : obtenerPrimerDiaMes();
-        Date fechaHasta = fechaHastaStr != null && !fechaHastaStr.isEmpty()
-                ? sdf.parse(fechaHastaStr) : new Date();
-
-        Map<String, Object> resultado = reporteDAO.obtenerResumenVentas(fechaDesde, fechaHasta);
-        resultado.put("ventasPorDia", reporteDAO.obtenerVentasPorDia(fechaDesde, fechaHasta));
+    private JsonObject reporteResumenVentasApi(HttpServletRequest request) throws ParseException, IOException {
+        JsonObject data = obtenerReporteVentasApi(request, obtenerPrimerDiaMes(), new Date());
+        JsonObject resultado = data.getAsJsonObject("resumen").deepCopy();
+        resultado.add("ventasPorDia", normalizarVentasPorDia(data.getAsJsonArray("ventasPorDia")));
         return resultado;
     }
 
-    private Map<String, Object> reporteListarVentas(HttpServletRequest request) throws ParseException {
-        String fechaDesdeStr = request.getParameter("fechaDesde");
-        String fechaHastaStr = request.getParameter("fechaHasta");
-
-        Date fechaDesde = fechaDesdeStr != null && !fechaDesdeStr.isEmpty()
-                ? sdf.parse(fechaDesdeStr) : obtenerPrimerDiaMes();
-        Date fechaHasta = fechaHastaStr != null && !fechaHastaStr.isEmpty()
-                ? sdf.parse(fechaHastaStr) : new Date();
-
-        Map<String, Object> resultado = new HashMap<>();
-        resultado.put("resumen", reporteDAO.obtenerResumenVentas(fechaDesde, fechaHasta));
-        resultado.put("ventas", reporteDAO.listarVentas(fechaDesde, fechaHasta));
+    private JsonObject reporteListarVentasApi(HttpServletRequest request) throws ParseException, IOException {
+        JsonObject data = obtenerReporteVentasApi(request, obtenerPrimerDiaMes(), new Date());
+        JsonObject resultado = new JsonObject();
+        resultado.add("resumen", data.getAsJsonObject("resumen"));
+        resultado.add("ventas", normalizarVentas(data.getAsJsonArray("ventas")));
         return resultado;
     }
 
-    private List<Map<String, Object>> reporteVentasPorDia(HttpServletRequest request) throws ParseException {
+    private JsonArray reporteVentasPorDiaApi(HttpServletRequest request) throws ParseException, IOException {
+        JsonObject data = obtenerReporteVentasApi(request, sumarDias(new Date(), -7), new Date());
+        return normalizarVentasPorDia(data.getAsJsonArray("ventasPorDia"));
+    }
+
+    private JsonObject obtenerReporteVentasApi(HttpServletRequest request, Date fechaDesdeDefault, Date fechaHastaDefault)
+            throws ParseException, IOException {
         String fechaDesdeStr = request.getParameter("fechaDesde");
         String fechaHastaStr = request.getParameter("fechaHasta");
 
         Date fechaDesde = fechaDesdeStr != null && !fechaDesdeStr.isEmpty()
-                ? sdf.parse(fechaDesdeStr) : sumarDias(new Date(), -7);
+                ? sdf.parse(fechaDesdeStr) : fechaDesdeDefault;
         Date fechaHasta = fechaHastaStr != null && !fechaHastaStr.isEmpty()
-                ? sdf.parse(fechaHastaStr) : new Date();
+                ? sdf.parse(fechaHastaStr) : fechaHastaDefault;
 
-        return reporteDAO.obtenerVentasPorDia(fechaDesde, fechaHasta);
+        return reporteApiClient.obtenerReporteVentas(sdf.format(fechaDesde), sdf.format(fechaHasta));
+    }
+
+    private JsonArray normalizarVentas(JsonArray ventasApi) {
+        JsonArray ventas = new JsonArray();
+        if (ventasApi == null) {
+            return ventas;
+        }
+        for (JsonElement element : ventasApi) {
+            if (!element.isJsonObject()) {
+                continue;
+            }
+            JsonObject item = element.getAsJsonObject();
+            JsonObject venta = new JsonObject();
+            copiar(venta, "id", item, "id");
+            copiar(venta, "numero", item, "numeroTransaccion");
+            copiar(venta, "fecha", item, "fecha");
+            copiar(venta, "total", item, "total");
+            copiar(venta, "metodoPago", item, "metodoPago");
+            copiar(venta, "montoEfectivo", item, "montoEfectivo");
+            copiar(venta, "montoVirtual", item, "montoVirtual");
+            copiar(venta, "vuelto", item, "vuelto");
+            copiar(venta, "cajero", item, "usuarioNombre");
+            ventas.add(venta);
+        }
+        return ventas;
+    }
+
+    private JsonArray normalizarVentasPorDia(JsonArray ventasPorDiaApi) {
+        JsonArray ventasPorDia = new JsonArray();
+        if (ventasPorDiaApi == null) {
+            return ventasPorDia;
+        }
+        for (JsonElement element : ventasPorDiaApi) {
+            if (element.isJsonObject()) {
+                ventasPorDia.add(element.getAsJsonObject());
+            }
+        }
+        return ventasPorDia;
+    }
+
+    private void copiar(JsonObject destino, String destinoKey, JsonObject origen, String origenKey) {
+        if (origen.has(origenKey) && !origen.get(origenKey).isJsonNull()) {
+            destino.add(destinoKey, origen.get(origenKey));
+        }
+    }
+
+    private JsonArray listarUsuariosActivosApi() throws IOException {
+        JsonArray usuarios = new JsonArray();
+        for (UsuarioDTO usuario : usuarioApiClient.listarTodos()) {
+            if (!usuario.isActivo()) {
+                continue;
+            }
+            JsonObject item = new JsonObject();
+            item.addProperty("id", usuario.getId());
+            item.addProperty("nombre", usuario.getNombreCompleto());
+            usuarios.add(item);
+        }
+        return usuarios;
     }
 
     // =====================================================

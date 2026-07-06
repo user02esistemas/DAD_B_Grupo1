@@ -18,4 +18,14 @@ public interface CatalogoServiceRMI extends Remote {
     List<CatalogoProductoDTO> listarPaginado(int pagina, int porPagina) throws RemoteException;
 
     int contarTotal() throws RemoteException;
+
+    int contarLaboratorios() throws RemoteException;
+
+    String obtenerUltimoAgregado() throws RemoteException;
+
+    Long insertar(CatalogoProductoDTO producto) throws RemoteException;
+
+    boolean actualizar(CatalogoProductoDTO producto) throws RemoteException;
+
+    boolean desactivar(Long id) throws RemoteException;
 }

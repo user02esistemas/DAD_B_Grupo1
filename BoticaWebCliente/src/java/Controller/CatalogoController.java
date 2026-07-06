@@ -1,11 +1,11 @@
 package controller;
 
 import DTO.CatalogoProductoDTO;
-import DAO.CatalogoProductoDAO;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import integration.api.CatalogoApiClient;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,7 +25,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class CatalogoController extends HttpServlet {
 
     private final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd").create();
-    private final CatalogoProductoDAO dao = new CatalogoProductoDAO();
+    private final CatalogoApiClient catalogoApiClient = new CatalogoApiClient();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -95,7 +95,7 @@ public class CatalogoController extends HttpServlet {
             return;
         }
 
-        List<CatalogoProductoDTO> productos = dao.buscarParaAutocomplete(termino.trim(), 20);
+        List<CatalogoProductoDTO> productos = catalogoApiClient.buscar(termino.trim(), 20);
 
         JsonArray jsonArray = new JsonArray();
         for (CatalogoProductoDTO p : productos) {
@@ -119,7 +119,7 @@ public class CatalogoController extends HttpServlet {
 
         try {
             Long id = Long.parseLong(idParam);
-            CatalogoProductoDTO producto = dao.buscarPorId(id);
+            CatalogoProductoDTO producto = catalogoApiClient.buscarPorId(id);
 
             if (producto == null) {
                 enviarErrorJson(response, "Producto no encontrado");
@@ -145,10 +145,11 @@ public class CatalogoController extends HttpServlet {
         JsonObject json = new JsonObject();
 
         try {
-            int total = dao.contarTotal();
-            int activos = dao.contarActivos();
-            int laboratorios = dao.contarLaboratorios();
-            String ultimoAgregado = dao.obtenerUltimoAgregado();
+            java.util.Map<String, Object> estadisticas = catalogoApiClient.obtenerEstadisticas();
+            int total = (Integer) estadisticas.get("total");
+            int activos = (Integer) estadisticas.get("activos");
+            int laboratorios = (Integer) estadisticas.get("laboratorios");
+            String ultimoAgregado = (String) estadisticas.get("ultimoAgregado");
 
             json.addProperty("total", total);
             json.addProperty("activos", activos);
@@ -185,7 +186,7 @@ public class CatalogoController extends HttpServlet {
             // Usar valores por defecto
         }
 
-        List<CatalogoProductoDTO> productos = dao.listarPaginado(pagina, porPagina);
+        List<CatalogoProductoDTO> productos = catalogoApiClient.listarPaginado(pagina, porPagina);
 
         JsonArray jsonArray = new JsonArray();
         for (CatalogoProductoDTO p : productos) {
@@ -194,7 +195,7 @@ public class CatalogoController extends HttpServlet {
 
         JsonObject json = new JsonObject();
         json.addProperty("success", true);
-        json.addProperty("total", dao.contarTotal());
+        json.addProperty("total", catalogoApiClient.contarTotal());
         json.addProperty("pagina", pagina);
         json.addProperty("porPagina", porPagina);
         json.add("productos", jsonArray);
@@ -258,14 +259,12 @@ public class CatalogoController extends HttpServlet {
             String mensaje;
 
             if (producto.getId() != null) {
-                resultado = dao.actualizar(producto);
+                catalogoApiClient.guardar(producto);
+                resultado = true;
                 mensaje = "Producto actualizado correctamente";
             } else {
-                Long id = dao.insertar(producto);
-                resultado = id != null;
-                if (resultado) {
-                    producto.setId(id);
-                }
+                producto = catalogoApiClient.guardar(producto);
+                resultado = producto != null && producto.getId() != null;
                 mensaje = "Producto creado correctamente";
             }
 
@@ -300,14 +299,11 @@ public class CatalogoController extends HttpServlet {
         try {
             Long id = Long.parseLong(idParam);
 
-            if (dao.desactivar(id)) {
-                JsonObject json = new JsonObject();
-                json.addProperty("success", true);
-                json.addProperty("message", "Producto eliminado correctamente");
-                enviarJsonResponse(response, json.toString());
-            } else {
-                enviarErrorJson(response, "Error al eliminar el producto");
-            }
+            catalogoApiClient.desactivar(id);
+            JsonObject json = new JsonObject();
+            json.addProperty("success", true);
+            json.addProperty("message", "Producto eliminado correctamente");
+            enviarJsonResponse(response, json.toString());
 
         } catch (NumberFormatException e) {
             enviarErrorJson(response, "ID inválido");

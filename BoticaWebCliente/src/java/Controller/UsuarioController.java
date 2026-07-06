@@ -2,19 +2,21 @@ package controller;
 
 import DTO.RolDTO;
 import DTO.UsuarioDTO;
+import integration.api.UsuarioApiClient;
 import java.io.IOException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.mindrot.jbcrypt.BCrypt;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @WebServlet(name = "UsuarioController", urlPatterns = {"/UsuarioController"})
 public class UsuarioController extends HttpServlet {
+
+    private final UsuarioApiClient usuarioApiClient = new UsuarioApiClient();
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -64,10 +66,10 @@ public class UsuarioController extends HttpServlet {
 
                 Long id = Long.parseLong(idParam);
 
-                UsuarioDTO usuario = UsuarioDTO.buscarPorId(id);  // <---- DTO
+                UsuarioDTO usuario = usuarioApiClient.buscarPorId(id);
 
                 if (usuario != null) {
-                    List<RolDTO> todosLosRoles = RolDTO.listarTodos(); // <---- DTO
+                    List<RolDTO> todosLosRoles = usuarioApiClient.listarRoles();
 
                     request.setAttribute("usuario", usuario);
                     request.setAttribute("roles", todosLosRoles);
@@ -128,49 +130,19 @@ public class UsuarioController extends HttpServlet {
                 return;
             }
 
-            // Validaciones de duplicados con DTO
-            if (UsuarioDTO.existeUsername(username)) {
-                response.sendRedirect(request.getContextPath() + "/admin/usuarios/crear.jsp?error="
-                        + java.net.URLEncoder.encode("El nombre de usuario ya existe", "UTF-8"));
-                return;
-            }
-
-            if (UsuarioDTO.existeEmail(email)) {
-                response.sendRedirect(request.getContextPath() + "/admin/usuarios/crear.jsp?error="
-                        + java.net.URLEncoder.encode("El email ya está registrado", "UTF-8"));
-                return;
-            }
-
-            if (UsuarioDTO.existeDni(dni)) {
-                response.sendRedirect(request.getContextPath() + "/admin/usuarios/crear.jsp?error="
-                        + java.net.URLEncoder.encode("El DNI ya está registrado", "UTF-8"));
-                return;
-            }
-
-            // Crear DTO
             UsuarioDTO usuario = new UsuarioDTO();
             usuario.setUsername(username.trim());
-            usuario.setPassword(BCrypt.hashpw(password, BCrypt.gensalt(10)));
+            usuario.setPassword(password);
             usuario.setEmail(email.trim());
             usuario.setNombreCompleto(nombreCompleto.trim());
             usuario.setDni(dni.trim());
             usuario.setTelefono(telefono != null ? telefono.trim() : null);
             usuario.setActivo(activo);
 
-            // Insertar desde el DTO
-            boolean creado = usuario.insertar(); // <---- DTO
-
-            if (!creado || usuario.getId() == null) {
-                response.sendRedirect(request.getContextPath() + "/admin/usuarios/crear.jsp?error="
-                        + java.net.URLEncoder.encode("Error al crear el usuario", "UTF-8"));
-                return;
-            }
-
-            // Asignar roles desde el DTO
             List<Long> rolesIds = Arrays.stream(rolesSeleccionados)
                     .map(Long::parseLong)
                     .collect(Collectors.toList());
-            usuario.asignarRoles(rolesIds); // <---- DTO
+            usuarioApiClient.crear(usuario, rolesIds);
 
             response.sendRedirect(request.getContextPath() + "/admin/usuarios/listar.jsp?success="
                     + java.net.URLEncoder.encode("Usuario creado exitosamente", "UTF-8"));
@@ -200,8 +172,8 @@ public class UsuarioController extends HttpServlet {
                     || nombreCompleto == null || nombreCompleto.trim().isEmpty()
                     || dni == null || dni.trim().isEmpty()) {
 
-                UsuarioDTO usuarioActual = UsuarioDTO.buscarPorId(id);
-                List<RolDTO> todosLosRoles = RolDTO.listarTodos();
+                UsuarioDTO usuarioActual = usuarioApiClient.buscarPorId(id);
+                List<RolDTO> todosLosRoles = usuarioApiClient.listarRoles();
 
                 request.setAttribute("usuario", usuarioActual);
                 request.setAttribute("roles", todosLosRoles);
@@ -212,8 +184,8 @@ public class UsuarioController extends HttpServlet {
 
             if (rolesSeleccionados == null || rolesSeleccionados.length == 0) {
 
-                UsuarioDTO usuarioActual = UsuarioDTO.buscarPorId(id);
-                List<RolDTO> todosLosRoles = RolDTO.listarTodos();
+                UsuarioDTO usuarioActual = usuarioApiClient.buscarPorId(id);
+                List<RolDTO> todosLosRoles = usuarioApiClient.listarRoles();
 
                 request.setAttribute("usuario", usuarioActual);
                 request.setAttribute("roles", todosLosRoles);
@@ -231,19 +203,10 @@ public class UsuarioController extends HttpServlet {
             usuario.setTelefono(telefono != null ? telefono.trim() : null);
             usuario.setActivo(activo);
 
-            boolean actualizado = usuario.actualizar(); // <---- DTO
-
-            if (!actualizado) {
-                response.sendRedirect(request.getContextPath() + "/admin/usuarios/listar.jsp?error="
-                        + java.net.URLEncoder.encode("No se pudo actualizar el usuario", "UTF-8"));
-                return;
-            }
-
-            // Actualizar roles vía DTO
             List<Long> rolesIds = Arrays.stream(rolesSeleccionados)
                     .map(Long::parseLong)
                     .collect(Collectors.toList());
-            usuario.asignarRoles(rolesIds); // <---- DTO
+            usuarioApiClient.actualizar(usuario, rolesIds);
 
             response.sendRedirect(request.getContextPath() + "/admin/usuarios/listar.jsp?success="
                     + java.net.URLEncoder.encode("Usuario actualizado exitosamente", "UTF-8"));
@@ -261,7 +224,7 @@ public class UsuarioController extends HttpServlet {
         try {
             Long id = Long.parseLong(request.getParameter("id"));
 
-            UsuarioDTO usuario = UsuarioDTO.buscarPorId(id); // <---- DTO
+            UsuarioDTO usuario = usuarioApiClient.buscarPorId(id);
 
             if (usuario == null) {
                 response.sendRedirect(request.getContextPath() + "/admin/usuarios/listar.jsp?error="
@@ -269,15 +232,9 @@ public class UsuarioController extends HttpServlet {
                 return;
             }
 
-            boolean eliminado = usuario.eliminar(); // <---- DTO (hard delete)
-
-            if (eliminado) {
-                response.sendRedirect(request.getContextPath() + "/admin/usuarios/listar.jsp?success="
-                        + java.net.URLEncoder.encode("Usuario eliminado exitosamente", "UTF-8"));
-            } else {
-                response.sendRedirect(request.getContextPath() + "/admin/usuarios/listar.jsp?error="
-                        + java.net.URLEncoder.encode("No se pudo eliminar el usuario", "UTF-8"));
-            }
+            usuarioApiClient.desactivar(usuario.getId());
+            response.sendRedirect(request.getContextPath() + "/admin/usuarios/listar.jsp?success="
+                    + java.net.URLEncoder.encode("Usuario desactivado exitosamente", "UTF-8"));
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -295,8 +252,8 @@ public class UsuarioController extends HttpServlet {
 
             if (nuevaPassword == null || nuevaPassword.trim().isEmpty()) {
 
-                UsuarioDTO usuarioActual = UsuarioDTO.buscarPorId(id);
-                List<RolDTO> todosLosRoles = RolDTO.listarTodos();
+                UsuarioDTO usuarioActual = usuarioApiClient.buscarPorId(id);
+                List<RolDTO> todosLosRoles = usuarioApiClient.listarRoles();
 
                 request.setAttribute("usuario", usuarioActual);
                 request.setAttribute("roles", todosLosRoles);
@@ -306,8 +263,8 @@ public class UsuarioController extends HttpServlet {
             }
 
             if (nuevaPassword.length() < 6) {
-                UsuarioDTO usuarioActual = UsuarioDTO.buscarPorId(id);
-                List<RolDTO> todosLosRoles = RolDTO.listarTodos();
+                UsuarioDTO usuarioActual = usuarioApiClient.buscarPorId(id);
+                List<RolDTO> todosLosRoles = usuarioApiClient.listarRoles();
 
                 request.setAttribute("usuario", usuarioActual);
                 request.setAttribute("roles", todosLosRoles);
@@ -316,7 +273,7 @@ public class UsuarioController extends HttpServlet {
                 return;
             }
 
-            UsuarioDTO usuario = UsuarioDTO.buscarPorId(id); // <---- DTO
+            UsuarioDTO usuario = usuarioApiClient.buscarPorId(id);
 
             if (usuario == null) {
                 response.sendRedirect(request.getContextPath() + "/admin/usuarios/listar.jsp?error="
@@ -324,23 +281,9 @@ public class UsuarioController extends HttpServlet {
                 return;
             }
 
-            String passwordHasheada = BCrypt.hashpw(nuevaPassword, BCrypt.gensalt(10));
-
-            boolean actualizado = usuario.actualizarPassword(passwordHasheada); // <---- DTO
-
-            if (actualizado) {
-                response.sendRedirect(request.getContextPath() + "/admin/usuarios/listar.jsp?success="
-                        + java.net.URLEncoder.encode("Contraseña actualizada exitosamente", "UTF-8"));
-            } else {
-
-                UsuarioDTO usuarioActual = UsuarioDTO.buscarPorId(id);
-                List<RolDTO> todosLosRoles = RolDTO.listarTodos();
-
-                request.setAttribute("usuario", usuarioActual);
-                request.setAttribute("roles", todosLosRoles);
-                request.setAttribute("error", "No se pudo actualizar la contraseña");
-                request.getRequestDispatcher("/admin/usuarios/editar.jsp").forward(request, response);
-            }
+            usuarioApiClient.cambiarPassword(usuario.getId(), nuevaPassword);
+            response.sendRedirect(request.getContextPath() + "/admin/usuarios/listar.jsp?success="
+                    + java.net.URLEncoder.encode("Contraseña actualizada exitosamente", "UTF-8"));
 
         } catch (Exception e) {
             e.printStackTrace();

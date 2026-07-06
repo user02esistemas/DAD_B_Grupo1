@@ -3,6 +3,7 @@ package rmi.services.reportes;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
+import java.util.Map;
 import rmi.dao.DashboardDAO;
 import rmi.dto.DashboardResumenDTO;
 import rmi.dto.ProductoAlertaDTO;
@@ -29,5 +30,20 @@ public class DashboardServiceImpl extends UnicastRemoteObject implements Dashboa
     @Override
     public List<ProductoAlertaDTO> obtenerProductosPorVencer(int limite) throws RemoteException {
         return dashboardDAO.obtenerProductosPorVencer(limite);
+    }
+
+    @Override
+    public Map<String, Object> obtenerVentasTurno(Long sesionCajaId) throws RemoteException {
+        return dashboardDAO.obtenerVentasTurno(sesionCajaId);
+    }
+
+    @Override
+    public Map<String, Object> obtenerVentasDelDiaUsuario(Long usuarioId) throws RemoteException {
+        return dashboardDAO.obtenerVentasDelDiaUsuario(usuarioId);
+    }
+
+    @Override
+    public List<Map<String, Object>> obtenerUltimasVentasUsuario(Long usuarioId, int limite) throws RemoteException {
+        return dashboardDAO.obtenerUltimasVentasUsuario(usuarioId, limite);
     }
 }

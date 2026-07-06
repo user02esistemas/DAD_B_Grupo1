@@ -1,6 +1,6 @@
 package controller;
 
-import DAO.DashboardDAO;
+import DTO.SesionCajaDTO;
 import DTO.UsuarioDTO;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -10,10 +10,10 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import integration.api.CajaApiClient;
 import integration.api.DashboardApiClient;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,8 +25,8 @@ import java.util.Map;
 @WebServlet(name = "DashboardController", urlPatterns = {"/DashboardController"})
 public class DashboardController extends HttpServlet {
 
-    private final DashboardDAO dashboardDAO = new DashboardDAO();
     private final DashboardApiClient dashboardApiClient = new DashboardApiClient();
+    private final CajaApiClient cajaApiClient = new CajaApiClient();
     private final Gson gson = new Gson();
 
     @Override
@@ -46,22 +46,19 @@ public class DashboardController extends HttpServlet {
         try {
             switch (action) {
                 case "resumen":
-                    out.print(gson.toJson(obtenerResumenApiCombinado()));
+                    out.print(gson.toJson(dashboardApiClient.obtenerResumen()));
                     break;
                 case "topProductos":
-                    int limite = getIntParam(request, "limite", 5);
-                    out.print(gson.toJson(dashboardDAO.obtenerTopProductosVendidos(limite)));
+                    out.print(gson.toJson(dashboardApiClient.obtenerResumen().getAsJsonArray("topProductos")));
                     break;
                 case "topProductosMes":
-                    int limiteMes = getIntParam(request, "limite", 5);
-                    out.print(gson.toJson(dashboardDAO.obtenerTopProductosMes(limiteMes)));
+                    out.print(gson.toJson(dashboardApiClient.obtenerResumen().getAsJsonArray("topProductosMes")));
                     break;
                 case "ventasSemana":
-                    out.print(gson.toJson(dashboardDAO.obtenerVentasUltimos7Dias()));
+                    out.print(gson.toJson(dashboardApiClient.obtenerResumen().getAsJsonArray("ventasSemana")));
                     break;
                 case "ultimasVentas":
-                    int limiteVentas = getIntParam(request, "limite", 5);
-                    out.print(gson.toJson(dashboardDAO.obtenerUltimasVentas(limiteVentas)));
+                    out.print(gson.toJson(dashboardApiClient.obtenerResumen().getAsJsonArray("ultimasVentas")));
                     break;
                 case "productosStockBajo":
                     int limiteStock = getIntParam(request, "limite", 5);
@@ -69,7 +66,7 @@ public class DashboardController extends HttpServlet {
                     break;
                 case "productosPorVencer":
                     int limiteVencer = getIntParam(request, "limite", 5);
-                    out.print(gson.toJson(dashboardDAO.obtenerProductosPorVencer(limiteVencer)));
+                    out.print(gson.toJson(dashboardApiClient.obtenerProductosPorVencer(limiteVencer)));
                     break;
                 case "alertas":
                     out.print(gson.toJson(obtenerAlertas()));
@@ -87,7 +84,7 @@ public class DashboardController extends HttpServlet {
                 case "ventasTurno":
                     Long sesionId = getLongParam(request, "sesionId", null);
                     if (sesionId != null) {
-                        out.print(gson.toJson(dashboardDAO.obtenerVentasTurno(sesionId)));
+                        out.print(gson.toJson(dashboardApiClient.obtenerVentasTurno(sesionId)));
                     } else {
                         out.print(gson.toJson(new HashMap<>()));
                     }
@@ -99,7 +96,7 @@ public class DashboardController extends HttpServlet {
                     out.print(gson.toJson(obtenerMisUltimasVentas(request)));
                     break;
                 case "cajasDisponibles":
-                    out.print(gson.toJson(dashboardDAO.obtenerCajasDisponibles()));
+                    out.print(gson.toJson(cajaApiClient.listarCajasDisponibles()));
                     break;
                     
                 default:
@@ -114,71 +111,23 @@ public class DashboardController extends HttpServlet {
         }
     }
 
-    private JsonObject obtenerResumenApiCombinado() throws IOException {
-        JsonObject resumen = dashboardApiClient.obtenerResumen();
-        // La API central ya entrega las métricas; estas listas quedan como
-        // compatibilidad temporal hasta exponer endpoints equivalentes.
-        if (!resumen.has("topProductos")) {
-            resumen.add("topProductos", gson.toJsonTree(dashboardDAO.obtenerTopProductosVendidos(5)));
-        }
-        if (!resumen.has("topProductosMes")) {
-            resumen.add("topProductosMes", gson.toJsonTree(dashboardDAO.obtenerTopProductosMes(5)));
-        }
-        if (!resumen.has("ventasSemana")) {
-            resumen.add("ventasSemana", gson.toJsonTree(dashboardDAO.obtenerVentasUltimos7Dias()));
-        }
-        if (!resumen.has("ultimasVentas")) {
-            resumen.add("ultimasVentas", gson.toJsonTree(dashboardDAO.obtenerUltimasVentas(5)));
-        }
-        return resumen;
-    }
-    
-    /**
-     * Obtener resumen general del dashboard
-     */
-    private Map<String, Object> obtenerResumen() {
-        Map<String, Object> resumen = new HashMap<>();
-        
-        // Ventas
-        resumen.put("ventasHoy", dashboardDAO.obtenerVentasDelDia());
-        resumen.put("cantidadVentasHoy", dashboardDAO.obtenerCantidadVentasDelDia());
-        resumen.put("ventasMes", dashboardDAO.obtenerVentasDelMes());
-        
-        // Compras
-        resumen.put("comprasHoy", dashboardDAO.obtenerComprasDelDia());
-        
-        // Inventario
-        resumen.put("totalProductos", dashboardDAO.contarTotalProductos());
-        resumen.put("stockBajo", dashboardDAO.contarProductosStockBajo());
-        resumen.put("agotados", dashboardDAO.contarProductosAgotados());
-        resumen.put("porVencer", dashboardDAO.contarProductosPorVencer());
-        resumen.put("vencidos", dashboardDAO.contarProductosVencidos());
-        
-        // Top productos
-        resumen.put("topProductos", dashboardDAO.obtenerTopProductosVendidos(5));
-        resumen.put("topProductosMes", dashboardDAO.obtenerTopProductosMes(5));
-        
-        // Ventas semana
-        resumen.put("ventasSemana", dashboardDAO.obtenerVentasUltimos7Dias());
-        
-        // Últimas ventas
-        resumen.put("ultimasVentas", dashboardDAO.obtenerUltimasVentas(5));
-        
-        return resumen;
-    }
-    
     /**
      * Obtener solo alertas
      */
-    private Map<String, Object> obtenerAlertas() {
+    private Map<String, Object> obtenerAlertas() throws IOException {
         Map<String, Object> alertas = new HashMap<>();
-        alertas.put("stockBajo", dashboardDAO.contarProductosStockBajo());
-        alertas.put("agotados", dashboardDAO.contarProductosAgotados());
-        alertas.put("porVencer", dashboardDAO.contarProductosPorVencer());
-        alertas.put("vencidos", dashboardDAO.contarProductosVencidos());
-        alertas.put("productosStockBajo", dashboardDAO.obtenerProductosStockBajo(5));
-        alertas.put("productosPorVencer", dashboardDAO.obtenerProductosPorVencer(5));
+        JsonObject resumen = dashboardApiClient.obtenerResumen();
+        alertas.put("stockBajo", getInt(resumen, "stockBajo"));
+        alertas.put("agotados", getInt(resumen, "agotados"));
+        alertas.put("porVencer", getInt(resumen, "porVencer"));
+        alertas.put("vencidos", getInt(resumen, "vencidos"));
+        alertas.put("productosStockBajo", dashboardApiClient.obtenerProductosStockBajo(5));
+        alertas.put("productosPorVencer", dashboardApiClient.obtenerProductosPorVencer(5));
         return alertas;
+    }
+
+    private int getInt(JsonObject object, String key) {
+        return object.has(key) && !object.get(key).isJsonNull() ? object.get(key).getAsInt() : 0;
     }
     
     // =====================================================
@@ -188,7 +137,7 @@ public class DashboardController extends HttpServlet {
     /**
      * Obtener resumen completo del turno del farmacéutico
      */
-    private Map<String, Object> obtenerMiTurno(HttpServletRequest request) {
+    private Map<String, Object> obtenerMiTurno(HttpServletRequest request) throws IOException {
         Map<String, Object> resultado = new HashMap<>();
         
         Long usuarioId = obtenerUsuarioIdSesion(request);
@@ -197,33 +146,34 @@ public class DashboardController extends HttpServlet {
             return resultado;
         }
         
-        // Sesión de caja activa
-        Map<String, Object> sesionActiva = dashboardDAO.obtenerSesionCajaActiva(usuarioId);
+        SesionCajaDTO sesion = cajaApiClient.buscarSesionAbierta(usuarioId);
+        Map<String, Object> sesionActiva = sesionToMap(sesion);
         resultado.put("sesionActiva", sesionActiva);
         resultado.put("tieneCajaAbierta", sesionActiva != null);
         
         // Si tiene caja abierta, obtener ventas del turno
         if (sesionActiva != null) {
             Long sesionId = (Long) sesionActiva.get("id");
-            resultado.put("ventasTurno", dashboardDAO.obtenerVentasTurno(sesionId));
+            resultado.put("ventasTurno", dashboardApiClient.obtenerVentasTurno(sesionId));
         }
         
         // Ventas del día del usuario
-        resultado.put("ventasHoy", dashboardDAO.obtenerVentasDelDiaUsuario(usuarioId));
+        resultado.put("ventasHoy", dashboardApiClient.obtenerVentasDelDiaUsuario(usuarioId));
         
         // Últimas ventas del usuario
-        resultado.put("ultimasVentas", dashboardDAO.obtenerUltimasVentasUsuario(usuarioId, 5));
+        resultado.put("ultimasVentas", dashboardApiClient.obtenerUltimasVentasUsuario(usuarioId, 5));
         
         // Alertas generales (productos con stock bajo y por vencer)
-        resultado.put("stockBajo", dashboardDAO.contarProductosStockBajo());
-        resultado.put("agotados", dashboardDAO.contarProductosAgotados());
-        resultado.put("porVencer", dashboardDAO.contarProductosPorVencer());
-        resultado.put("vencidos", dashboardDAO.contarProductosVencidos());
-        resultado.put("productosStockBajo", dashboardDAO.obtenerProductosStockBajo(5));
-        resultado.put("productosPorVencer", dashboardDAO.obtenerProductosPorVencer(5));
+        JsonObject resumen = dashboardApiClient.obtenerResumen();
+        resultado.put("stockBajo", getInt(resumen, "stockBajo"));
+        resultado.put("agotados", getInt(resumen, "agotados"));
+        resultado.put("porVencer", getInt(resumen, "porVencer"));
+        resultado.put("vencidos", getInt(resumen, "vencidos"));
+        resultado.put("productosStockBajo", dashboardApiClient.obtenerProductosStockBajo(5));
+        resultado.put("productosPorVencer", dashboardApiClient.obtenerProductosPorVencer(5));
         
         // Cajas disponibles (para apertura)
-        resultado.put("cajasDisponibles", dashboardDAO.obtenerCajasDisponibles());
+        resultado.put("cajasDisponibles", cajaApiClient.listarCajasDisponibles());
         
         return resultado;
     }
@@ -231,7 +181,7 @@ public class DashboardController extends HttpServlet {
     /**
      * Obtener sesión de caja activa del usuario
      */
-    private Map<String, Object> obtenerSesionActiva(HttpServletRequest request) {
+    private Map<String, Object> obtenerSesionActiva(HttpServletRequest request) throws IOException {
         Long usuarioId = obtenerUsuarioIdSesion(request);
         if (usuarioId == null) {
             Map<String, Object> error = new HashMap<>();
@@ -239,7 +189,7 @@ public class DashboardController extends HttpServlet {
             return error;
         }
         
-        Map<String, Object> sesion = dashboardDAO.obtenerSesionCajaActiva(usuarioId);
+        Map<String, Object> sesion = sesionToMap(cajaApiClient.buscarSesionAbierta(usuarioId));
         if (sesion == null) {
             Map<String, Object> resultado = new HashMap<>();
             resultado.put("activa", false);
@@ -249,34 +199,48 @@ public class DashboardController extends HttpServlet {
         sesion.put("activa", true);
         // Agregar ventas del turno
         Long sesionId = (Long) sesion.get("id");
-        sesion.put("ventasTurno", dashboardDAO.obtenerVentasTurno(sesionId));
+        sesion.put("ventasTurno", dashboardApiClient.obtenerVentasTurno(sesionId));
         
         return sesion;
+    }
+
+    private Map<String, Object> sesionToMap(SesionCajaDTO sesion) {
+        if (sesion == null) {
+            return null;
+        }
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", sesion.getId());
+        map.put("cajaId", sesion.getCajaId());
+        map.put("cajaNombre", sesion.getCajaNombre());
+        map.put("fechaApertura", sesion.getFechaApertura());
+        map.put("montoInicial", sesion.getMontoInicial());
+        map.put("estado", sesion.getEstado());
+        return map;
     }
     
     /**
      * Obtener ventas del día del usuario actual
      */
-    private Map<String, Object> obtenerMisVentasHoy(HttpServletRequest request) {
+    private JsonObject obtenerMisVentasHoy(HttpServletRequest request) throws IOException {
         Long usuarioId = obtenerUsuarioIdSesion(request);
         if (usuarioId == null) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("error", "Usuario no autenticado");
+            JsonObject error = new JsonObject();
+            error.addProperty("error", "Usuario no autenticado");
             return error;
         }
-        return dashboardDAO.obtenerVentasDelDiaUsuario(usuarioId);
+        return dashboardApiClient.obtenerVentasDelDiaUsuario(usuarioId);
     }
     
     /**
      * Obtener últimas ventas del usuario actual
      */
-    private List<Map<String, Object>> obtenerMisUltimasVentas(HttpServletRequest request) {
+    private Object obtenerMisUltimasVentas(HttpServletRequest request) throws IOException {
         Long usuarioId = obtenerUsuarioIdSesion(request);
         if (usuarioId == null) {
             return java.util.Collections.emptyList();
         }
         int limite = getIntParam(request, "limite", 5);
-        return dashboardDAO.obtenerUltimasVentasUsuario(usuarioId, limite);
+        return dashboardApiClient.obtenerUltimasVentasUsuario(usuarioId, limite);
     }
     
     /**

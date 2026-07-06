@@ -7,7 +7,9 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import api.common.ApiResponse;
 import api.config.RMIClientFactory;
 import rmi.dto.ProductoResumenDTO;
@@ -26,6 +28,29 @@ public class ProductoApiServlet extends HttpServlet {
 
         try {
             ProductoServiceRMI productoService = RMIClientFactory.getProductoService();
+            if (esRutaInventarioEstadisticas(request)) {
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write(gson.toJson(ApiResponse.ok("Estadisticas de inventario", productoService.obtenerEstadisticasInventario())));
+                return;
+            }
+            if (esRutaInventario(request)) {
+                int pagina = parseInt(request.getParameter("pagina"), 1);
+                int porPagina = parseInt(request.getParameter("porPagina"), 15);
+                String termino = request.getParameter("termino");
+                String filtroStock = request.getParameter("filtroStock");
+                String filtroVencimiento = request.getParameter("filtroVencimiento");
+
+                Map<String, Object> data = new LinkedHashMap<>();
+                data.put("productos", productoService.buscarInventario(termino, filtroStock, filtroVencimiento, pagina, porPagina));
+                data.put("total", productoService.contarInventario(termino, filtroStock, filtroVencimiento));
+                data.put("pagina", pagina);
+                data.put("porPagina", porPagina);
+
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write(gson.toJson(ApiResponse.ok("Inventario encontrado", data)));
+                return;
+            }
+
             Long id = obtenerId(request);
             if (id != null) {
                 ProductoResumenDTO producto = productoService.buscarPorId(id);
@@ -53,11 +78,23 @@ public class ProductoApiServlet extends HttpServlet {
     }
 
     private int parseLimite(String value) {
+        return parseInt(value, 15);
+    }
+
+    private int parseInt(String value, int defaultValue) {
         try {
-            return value == null ? 15 : Integer.parseInt(value);
+            return value == null ? defaultValue : Integer.parseInt(value);
         } catch (NumberFormatException ex) {
-            return 15;
+            return defaultValue;
         }
+    }
+
+    private boolean esRutaInventario(HttpServletRequest request) {
+        return "/inventario".equals(request.getPathInfo());
+    }
+
+    private boolean esRutaInventarioEstadisticas(HttpServletRequest request) {
+        return "/inventario/estadisticas".equals(request.getPathInfo());
     }
 
     private Long obtenerId(HttpServletRequest request) {

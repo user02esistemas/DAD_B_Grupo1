@@ -16,7 +16,11 @@ import rmi.reportes.DashboardServiceRMI;
 
 @WebServlet(name = "DashboardApiServlet", urlPatterns = {
     "/api/dashboard/resumen",
-    "/api/dashboard/productos-alerta"
+    "/api/dashboard/productos-alerta",
+    "/api/dashboard/productos-vencer",
+    "/api/dashboard/ventas-turno",
+    "/api/dashboard/ventas-usuario-hoy",
+    "/api/dashboard/ultimas-ventas-usuario"
 })
 public class DashboardApiServlet extends HttpServlet {
 
@@ -40,6 +44,51 @@ public class DashboardApiServlet extends HttpServlet {
                 return;
             }
 
+            if ("/api/dashboard/productos-vencer".equals(path)) {
+                int limite = parseLimite(request.getParameter("limite"));
+                List<ProductoAlertaDTO> alertas = dashboardService.obtenerProductosPorVencer(limite);
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write(gson.toJson(ApiResponse.ok("Productos por vencer", alertas)));
+                return;
+            }
+
+            if ("/api/dashboard/ventas-turno".equals(path)) {
+                Long sesionId = parseLong(request.getParameter("sesionId"));
+                if (sesionId == null) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    response.getWriter().write(gson.toJson(ApiResponse.error("Sesion requerida")));
+                    return;
+                }
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write(gson.toJson(ApiResponse.ok("Ventas del turno", dashboardService.obtenerVentasTurno(sesionId))));
+                return;
+            }
+
+            if ("/api/dashboard/ventas-usuario-hoy".equals(path)) {
+                Long usuarioId = parseLong(request.getParameter("usuarioId"));
+                if (usuarioId == null) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    response.getWriter().write(gson.toJson(ApiResponse.error("Usuario requerido")));
+                    return;
+                }
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write(gson.toJson(ApiResponse.ok("Ventas del dia", dashboardService.obtenerVentasDelDiaUsuario(usuarioId))));
+                return;
+            }
+
+            if ("/api/dashboard/ultimas-ventas-usuario".equals(path)) {
+                Long usuarioId = parseLong(request.getParameter("usuarioId"));
+                int limite = parseLimite(request.getParameter("limite"));
+                if (usuarioId == null) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    response.getWriter().write(gson.toJson(ApiResponse.error("Usuario requerido")));
+                    return;
+                }
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write(gson.toJson(ApiResponse.ok("Ultimas ventas del usuario", dashboardService.obtenerUltimasVentasUsuario(usuarioId, limite))));
+                return;
+            }
+
             DashboardResumenDTO resumen = dashboardService.obtenerResumenCompleto();
             response.setStatus(HttpServletResponse.SC_OK);
             response.getWriter().write(gson.toJson(ApiResponse.ok("Resumen del dashboard", resumen)));
@@ -54,6 +103,14 @@ public class DashboardApiServlet extends HttpServlet {
             return value == null ? 10 : Integer.parseInt(value);
         } catch (NumberFormatException ex) {
             return 10;
+        }
+    }
+
+    private Long parseLong(String value) {
+        try {
+            return value == null ? null : Long.parseLong(value);
+        } catch (NumberFormatException ex) {
+            return null;
         }
     }
 }

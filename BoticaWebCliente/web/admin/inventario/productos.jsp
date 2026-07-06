@@ -6,7 +6,7 @@
 --%>
 
 <%@ page contentType="text/html" pageEncoding="UTF-8"%>
-<%@ page import="DAO.ProductoDAO, DTO.ProductoDTO, java.util.List, java.text.SimpleDateFormat, java.text.DecimalFormat" %>
+<%@ page import="DTO.ProductoDTO, integration.api.ProductoApiClient, java.util.List, java.util.Map, java.text.SimpleDateFormat, java.text.DecimalFormat" %>
 <%
     request.setAttribute("pageTitle", "Mis Productos - Sistema Botica");
     
@@ -28,20 +28,22 @@
         }
     }
     
-    // Obtener datos
-    ProductoDAO productoDAO = new ProductoDAO();
-    List<ProductoDTO> productos = productoDAO.buscarConFiltros(
-        busqueda, null, filtroStock, filtroVencimiento, pagina, porPagina);
-    int totalRegistros = productoDAO.contarConFiltros(busqueda, null, filtroStock, filtroVencimiento);
+    // Obtener datos vía API REST -> RMI
+    ProductoApiClient productoApiClient = new ProductoApiClient();
+    ProductoApiClient.InventarioResult inventario = productoApiClient.buscarInventario(
+        busqueda, filtroStock, filtroVencimiento, pagina, porPagina);
+    List<ProductoDTO> productos = inventario.getProductos();
+    int totalRegistros = inventario.getTotal();
     
     int totalPaginas = (int) Math.ceil((double) totalRegistros / porPagina);
     if (totalPaginas < 1) totalPaginas = 1;
     
     // Estadísticas
-    int totalProductos = productoDAO.contarTotal();
-    int stockBajo = productoDAO.contarStockBajo();
-    int agotados = productoDAO.contarAgotados();
-    int porVencer = productoDAO.contarPorVencer(30);
+    Map<String, Integer> estadisticas = productoApiClient.obtenerEstadisticasInventario();
+    int totalProductos = estadisticas.get("totalProductos");
+    int stockBajo = estadisticas.get("stockBajo");
+    int agotados = estadisticas.get("agotados");
+    int porVencer = estadisticas.get("porVencer");
     
     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
     DecimalFormat df = new DecimalFormat("#,##0.00");

@@ -30,7 +30,20 @@ public class WebApiClient {
     }
 
     public ApiResult post(String path, Object body) throws IOException {
-        HttpURLConnection connection = open(path, "POST");
+        return sendWithBody(path, "POST", body);
+    }
+
+    public ApiResult put(String path, Object body) throws IOException {
+        return sendWithBody(path, "PUT", body);
+    }
+
+    public ApiResult delete(String path) throws IOException {
+        HttpURLConnection connection = open(path, "DELETE");
+        return read(connection);
+    }
+
+    private ApiResult sendWithBody(String path, String method, Object body) throws IOException {
+        HttpURLConnection connection = open(path, method);
         connection.setDoOutput(true);
         byte[] payload = gson.toJson(body).getBytes(StandardCharsets.UTF_8);
         connection.setRequestProperty("Content-Length", String.valueOf(payload.length));

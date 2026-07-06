@@ -1,6 +1,8 @@
 package rmi.compras;
 
 import rmi.dto.DetalleTransaccionDTO;
+import rmi.dto.CatalogoProductoDTO;
+import rmi.dto.ProductoDTO;
 import rmi.dto.ProveedorDTO;
 import rmi.dto.TransaccionDTO;
 import java.rmi.Remote;
@@ -22,6 +24,18 @@ public interface CompraServiceRMI extends Remote {
     boolean anular(Long id) throws RemoteException;
 
     String generarNumeroCompra() throws RemoteException;
+
+    List<CatalogoProductoDTO> buscarProductosCatalogo(String termino, int limite) throws RemoteException;
+
+    CatalogoProductoDTO buscarProductoCatalogoPorCodigo(String codigo) throws RemoteException;
+
+    CatalogoProductoDTO buscarProductoCatalogoPorId(Long id) throws RemoteException;
+
+    int obtenerStockTotalPorCatalogo(Long catalogoId) throws RemoteException;
+
+    java.math.BigDecimal obtenerPrecioCompraPorCatalogo(Long catalogoId) throws RemoteException;
+
+    List<ProductoDTO> listarLotesPorCatalogo(Long catalogoId) throws RemoteException;
 
     // Proveedores
     List<ProveedorDTO> listarProveedores() throws RemoteException;

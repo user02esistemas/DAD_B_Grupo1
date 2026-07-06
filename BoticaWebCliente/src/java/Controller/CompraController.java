@@ -10,6 +10,8 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
 import com.google.gson.reflect.TypeToken;
+import integration.api.CompraApiClient;
+import integration.api.CompraApiClient.StockCatalogo;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -33,6 +35,7 @@ import jakarta.servlet.http.HttpSession;
 public class CompraController extends HttpServlet {
 
     private final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd").create();
+    private final CompraApiClient compraApiClient = new CompraApiClient();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -122,7 +125,7 @@ public class CompraController extends HttpServlet {
             return;
         }
 
-        List<CatalogoProductoDTO> productos = CatalogoProductoDTO.buscarParaAutocomplete(termino.trim(), 15);
+        List<CatalogoProductoDTO> productos = compraApiClient.buscarProductosCatalogo(termino.trim(), 15);
         
         // Construir respuesta JSON optimizada
         JsonArray jsonArray = new JsonArray();
@@ -156,7 +159,7 @@ public class CompraController extends HttpServlet {
             return;
         }
 
-        CatalogoProductoDTO producto = CatalogoProductoDTO.buscarPorCodigo(codigo.trim());
+        CatalogoProductoDTO producto = compraApiClient.buscarProductoCatalogoPorCodigo(codigo.trim());
         if (producto == null) {
             enviarErrorJson(response, "Producto no encontrado");
             return;
@@ -181,7 +184,7 @@ public class CompraController extends HttpServlet {
 
         try {
             Long id = Long.parseLong(idParam);
-            CatalogoProductoDTO producto = CatalogoProductoDTO.buscarPorId(id);
+            CatalogoProductoDTO producto = compraApiClient.buscarProductoCatalogoPorId(id);
             
             if (producto == null) {
                 enviarErrorJson(response, "Producto no encontrado");
@@ -191,11 +194,10 @@ public class CompraController extends HttpServlet {
             JsonObject obj = construirJsonProducto(producto);
             
             // Agregar información de stock actual
-            int stockActual = ProductoDTO.obtenerStockTotalPorCatalogo(id);
-            BigDecimal precioCompraActual = ProductoDTO.obtenerPrecioCompraPorCatalogo(id);
+            StockCatalogo stock = compraApiClient.obtenerStockCatalogo(id);
             
-            obj.addProperty("stockActual", stockActual);
-            obj.addProperty("precioCompraActual", precioCompraActual);
+            obj.addProperty("stockActual", stock.getStockTotal());
+            obj.addProperty("precioCompraActual", stock.getPrecioCompraPromedio());
 
             enviarJsonResponse(response, obj.toString());
 
@@ -219,16 +221,14 @@ public class CompraController extends HttpServlet {
         try {
             Long catalogoId = Long.parseLong(catalogoIdParam);
             
-            int stockTotal = ProductoDTO.obtenerStockTotalPorCatalogo(catalogoId);
-            BigDecimal precioCompra = ProductoDTO.obtenerPrecioCompraPorCatalogo(catalogoId);
-            List<ProductoDTO> lotes = ProductoDTO.listarPorCatalogo(catalogoId);
+            StockCatalogo stock = compraApiClient.obtenerStockCatalogo(catalogoId);
 
             JsonObject obj = new JsonObject();
-            obj.addProperty("stockTotal", stockTotal);
-            obj.addProperty("precioCompraPromedio", precioCompra);
+            obj.addProperty("stockTotal", stock.getStockTotal());
+            obj.addProperty("precioCompraPromedio", stock.getPrecioCompraPromedio());
             
             JsonArray lotesArray = new JsonArray();
-            for (ProductoDTO lote : lotes) {
+            for (ProductoDTO lote : stock.getLotes()) {
                 JsonObject loteObj = new JsonObject();
                 loteObj.addProperty("id", lote.getId());
                 loteObj.addProperty("lote", lote.getLote());
@@ -254,7 +254,7 @@ public class CompraController extends HttpServlet {
     private void listarProveedores(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
 
-        List<ProveedorDTO> proveedores = ProveedorDTO.listarActivos();
+        List<ProveedorDTO> proveedores = compraApiClient.listarProveedoresActivos();
         
         JsonArray jsonArray = new JsonArray();
         for (ProveedorDTO p : proveedores) {
@@ -279,7 +279,7 @@ public class CompraController extends HttpServlet {
             return;
         }
 
-        List<ProveedorDTO> proveedores = ProveedorDTO.buscarParaAutocomplete(termino.trim());
+        List<ProveedorDTO> proveedores = compraApiClient.buscarProveedores(termino.trim());
         
         JsonArray jsonArray = new JsonArray();
         for (ProveedorDTO p : proveedores) {
@@ -309,7 +309,7 @@ public class CompraController extends HttpServlet {
             return;
         }
 
-        if (ProveedorDTO.existeRuc(ruc.trim())) {
+        if (compraApiClient.buscarProveedores(ruc.trim()).stream().anyMatch(p -> ruc.trim().equals(p.getRuc()))) {
             enviarErrorJson(response, "El RUC ya está registrado");
             return;
         }
@@ -323,12 +323,13 @@ public class CompraController extends HttpServlet {
         proveedor.setDireccion(direccion);
         proveedor.setActivo(true);
 
-        if (proveedor.insertar()) {
+        ProveedorDTO registrado = compraApiClient.registrarProveedor(proveedor);
+        if (registrado != null && registrado.getId() != null) {
             JsonObject obj = new JsonObject();
             obj.addProperty("success", true);
-            obj.addProperty("id", proveedor.getId());
-            obj.addProperty("ruc", proveedor.getRuc());
-            obj.addProperty("razonSocial", proveedor.getRazonSocial());
+            obj.addProperty("id", registrado.getId());
+            obj.addProperty("ruc", registrado.getRuc());
+            obj.addProperty("razonSocial", registrado.getRazonSocial());
             obj.addProperty("mensaje", "Proveedor registrado correctamente");
             enviarJsonResponse(response, obj.toString());
         } else {
@@ -445,12 +446,13 @@ public class CompraController extends HttpServlet {
             transaccion.setEstado("COMPLETADA");
 
             // Registrar
-            if (transaccion.registrar()) {
+            TransaccionDTO registrada = compraApiClient.registrarCompra(transaccion, detalles);
+            if (registrada != null && registrada.getId() != null) {
                 JsonObject obj = new JsonObject();
                 obj.addProperty("success", true);
-                obj.addProperty("transaccionId", transaccion.getId());
-                obj.addProperty("numeroTransaccion", transaccion.getNumeroTransaccion());
-                obj.addProperty("total", transaccion.getTotal());
+                obj.addProperty("transaccionId", registrada.getId());
+                obj.addProperty("numeroTransaccion", registrada.getNumeroTransaccion());
+                obj.addProperty("total", registrada.getTotal());
                 obj.addProperty("mensaje", "Compra registrada exitosamente");
                 enviarJsonResponse(response, obj.toString());
             } else {
@@ -484,7 +486,7 @@ public class CompraController extends HttpServlet {
             // Usar valores por defecto
         }
 
-        List<TransaccionDTO> compras = TransaccionDTO.listarCompras(pagina, porPagina);
+        List<TransaccionDTO> compras = compraApiClient.listarCompras(pagina, porPagina);
         
         JsonArray jsonArray = new JsonArray();
         for (TransaccionDTO c : compras) {
@@ -514,7 +516,7 @@ public class CompraController extends HttpServlet {
 
         try {
             Long id = Long.parseLong(idParam);
-            TransaccionDTO compra = TransaccionDTO.buscarPorId(id);
+            TransaccionDTO compra = compraApiClient.buscarCompraPorId(id);
             
             if (compra == null) {
                 enviarErrorJson(response, "Compra no encontrada");
@@ -539,21 +541,18 @@ public class CompraController extends HttpServlet {
 
         try {
             Long id = Long.parseLong(idParam);
-            TransaccionDTO compra = TransaccionDTO.buscarPorId(id);
+            TransaccionDTO compra = compraApiClient.buscarCompraPorId(id);
             
             if (compra == null) {
                 enviarErrorJson(response, "Compra no encontrada");
                 return;
             }
 
-            if (compra.anular()) {
-                JsonObject obj = new JsonObject();
-                obj.addProperty("success", true);
-                obj.addProperty("mensaje", "Compra anulada correctamente");
-                enviarJsonResponse(response, obj.toString());
-            } else {
-                enviarErrorJson(response, "Error al anular la compra");
-            }
+            compraApiClient.anularCompra(id);
+            JsonObject obj = new JsonObject();
+            obj.addProperty("success", true);
+            obj.addProperty("mensaje", "Compra anulada correctamente");
+            enviarJsonResponse(response, obj.toString());
 
         } catch (NumberFormatException e) {
             enviarErrorJson(response, "ID inválido");

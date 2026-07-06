@@ -2,12 +2,15 @@ package integration.api;
 
 import DTO.SesionCajaDTO;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import integration.api.WebApiClient.ApiResult;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class CajaApiClient {
@@ -45,6 +48,37 @@ public class CajaApiClient {
         if (!result.isSuccess()) {
             throw new IOException(result.getMessage());
         }
+    }
+
+    public SesionCajaDTO obtenerResumen(Long sesionId) throws IOException {
+        ApiResult result = apiClient.get("/api/caja/resumen?sesionId=" + sesionId);
+        if (!result.isSuccess()) {
+            throw new IOException(result.getMessage());
+        }
+        JsonElement data = result.getJson().get("data");
+        return data != null && data.isJsonObject() ? toSesion(data.getAsJsonObject()) : null;
+    }
+
+    public List<Map<String, Object>> listarCajasDisponibles() throws IOException {
+        ApiResult result = apiClient.get("/api/caja/disponibles");
+        if (!result.isSuccess()) {
+            throw new IOException(result.getMessage());
+        }
+        List<Map<String, Object>> cajas = new ArrayList<>();
+        JsonElement data = result.getJson().get("data");
+        if (data == null || !data.isJsonArray()) {
+            return cajas;
+        }
+        JsonArray array = data.getAsJsonArray();
+        for (int i = 0; i < array.size(); i++) {
+            JsonObject item = array.get(i).getAsJsonObject();
+            Map<String, Object> caja = new HashMap<>();
+            caja.put("id", getLong(item, "id"));
+            caja.put("nombre", getString(item, "nombre"));
+            caja.put("ubicacion", getString(item, "ubicacion"));
+            cajas.add(caja);
+        }
+        return cajas;
     }
 
     private SesionCajaDTO toSesion(JsonObject json) {

@@ -10,6 +10,8 @@ import java.sql.Types;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import rmi.config.DatabaseConfig;
 import rmi.dto.DetalleTransaccionDTO;
 import rmi.dto.SesionCajaDTO;
@@ -86,6 +88,63 @@ public class VentaDAO {
             throw new IllegalStateException("Error al listar ventas", ex);
         }
         return ventas;
+    }
+
+    public List<TransaccionDTO> buscar(String termino, int pagina, int porPagina) {
+        StringBuilder sql = new StringBuilder("SELECT t.*, tt.nombre AS tipo_nombre, u.nombre_completo AS usuario_nombre "
+                + "FROM transacciones t "
+                + "INNER JOIN tipos_transaccion tt ON t.tipo_transaccion_id = tt.id "
+                + "LEFT JOIN usuarios u ON t.usuario_id = u.id "
+                + "WHERE t.tipo_transaccion_id = 2 ");
+        boolean filtrar = termino != null && !termino.trim().isEmpty();
+        if (filtrar) {
+            sql.append("AND (t.numero_transaccion LIKE ? OR t.nombre_persona LIKE ?) ");
+        }
+        sql.append("ORDER BY t.fecha DESC LIMIT ? OFFSET ?");
+
+        List<TransaccionDTO> ventas = new ArrayList<>();
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql.toString())) {
+            int index = 1;
+            if (filtrar) {
+                String filtro = "%" + termino.trim() + "%";
+                ps.setString(index++, filtro);
+                ps.setString(index++, filtro);
+            }
+            int paginaSegura = pagina <= 0 ? 1 : pagina;
+            int porPaginaSeguro = porPagina <= 0 ? 15 : porPagina;
+            ps.setInt(index++, porPaginaSeguro);
+            ps.setInt(index, (paginaSegura - 1) * porPaginaSeguro);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    ventas.add(mapearVenta(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al buscar ventas", ex);
+        }
+        return ventas;
+    }
+
+    public int contarVentas(String termino) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM transacciones t WHERE t.tipo_transaccion_id = 2 ");
+        boolean filtrar = termino != null && !termino.trim().isEmpty();
+        if (filtrar) {
+            sql.append("AND (t.numero_transaccion LIKE ? OR t.nombre_persona LIKE ?) ");
+        }
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql.toString())) {
+            if (filtrar) {
+                String filtro = "%" + termino.trim() + "%";
+                ps.setString(1, filtro);
+                ps.setString(2, filtro);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al contar ventas", ex);
+        }
     }
 
     public String generarNumeroVenta() {
@@ -194,6 +253,7 @@ public class VentaDAO {
     public SesionCajaDTO obtenerResumenSesion(Long sesionId) {
         String sql = "SELECT COALESCE(SUM(total), 0) AS total_transacciones, "
                 + "COALESCE(SUM(monto_efectivo), 0) AS efectivo, "
+                + "COALESCE(SUM(vuelto), 0) AS vueltos, "
                 + "COALESCE(SUM(monto_virtual), 0) AS virtual "
                 + "FROM transacciones WHERE sesion_caja_id = ? AND tipo_transaccion_id = 2 AND estado = 'COMPLETADA'";
         try (Connection con = DatabaseConfig.getConnection();
@@ -207,14 +267,40 @@ public class VentaDAO {
                 if (rs.next()) {
                     sesion.setTotalTransacciones(rs.getBigDecimal("total_transacciones"));
                     sesion.setTotalVentasEfectivo(rs.getBigDecimal("efectivo"));
+                    sesion.setTotalVueltos(rs.getBigDecimal("vueltos"));
                     sesion.setTotalVentasVirtual(rs.getBigDecimal("virtual"));
-                    sesion.setEfectivoEsperado(sesion.getMontoInicial().add(sesion.getTotalVentasEfectivo()));
+                    sesion.setEfectivoEsperado(sesion.getMontoInicial()
+                            .add(sesion.getTotalVentasEfectivo())
+                            .subtract(sesion.getTotalVueltos()));
                 }
             }
             return sesion;
         } catch (SQLException ex) {
             throw new IllegalStateException("Error al obtener resumen de caja", ex);
         }
+    }
+
+    public List<Map<String, Object>> listarCajasDisponibles() {
+        String sql = "SELECT c.id, c.nombre, c.descripcion "
+                + "FROM cajas c "
+                + "WHERE c.activo = 1 "
+                + "AND c.id NOT IN (SELECT caja_id FROM sesiones_caja WHERE estado = 'ABIERTA') "
+                + "ORDER BY c.nombre";
+        List<Map<String, Object>> cajas = new ArrayList<>();
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Map<String, Object> caja = new HashMap<>();
+                caja.put("id", rs.getLong("id"));
+                caja.put("nombre", rs.getString("nombre"));
+                caja.put("ubicacion", rs.getString("descripcion"));
+                cajas.add(caja);
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al listar cajas disponibles", ex);
+        }
+        return cajas;
     }
 
     private void prepararVenta(Connection con, TransaccionDTO venta, List<DetalleTransaccionDTO> detalles) throws SQLException {

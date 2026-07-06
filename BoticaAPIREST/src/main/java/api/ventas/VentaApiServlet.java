@@ -12,12 +12,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import rmi.dto.DetalleTransaccionDTO;
 import rmi.dto.SesionCajaDTO;
 import rmi.dto.TransaccionDTO;
 import rmi.ventas.VentaServiceRMI;
 
-@WebServlet(name = "VentaApiServlet", urlPatterns = {"/api/ventas", "/api/ventas/ultimas"})
+@WebServlet(name = "VentaApiServlet", urlPatterns = {"/api/ventas", "/api/ventas/*", "/api/ventas/ultimas"})
 public class VentaApiServlet extends HttpServlet {
 
     private final Gson gson = new Gson();
@@ -29,8 +31,37 @@ public class VentaApiServlet extends HttpServlet {
         response.setContentType("application/json;charset=UTF-8");
 
         try {
-            int limite = parseLimite(request.getParameter("limite"));
             VentaServiceRMI ventaService = RMIClientFactory.getVentaService();
+            Long id = obtenerId(request);
+            if (id != null) {
+                TransaccionDTO venta = ventaService.buscarPorId(id);
+                if (venta == null) {
+                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                    response.getWriter().write(gson.toJson(ApiResponse.error("Venta no encontrada")));
+                    return;
+                }
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write(gson.toJson(ApiResponse.ok("Venta encontrada", venta)));
+                return;
+            }
+
+            Integer pagina = parseOptionalInt(request.getParameter("pagina"));
+            Integer porPagina = parseOptionalInt(request.getParameter("porPagina"));
+            if (pagina != null || porPagina != null) {
+                int paginaValor = pagina == null ? 1 : pagina;
+                int porPaginaValor = porPagina == null ? 15 : porPagina;
+                String termino = request.getParameter("termino");
+                Map<String, Object> data = new LinkedHashMap<>();
+                data.put("ventas", ventaService.buscar(termino, paginaValor, porPaginaValor));
+                data.put("total", ventaService.contarVentas(termino));
+                data.put("pagina", paginaValor);
+                data.put("porPagina", porPaginaValor);
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write(gson.toJson(ApiResponse.ok("Ventas encontradas", data)));
+                return;
+            }
+
+            int limite = parseLimite(request.getParameter("limite"));
             List<TransaccionDTO> ventas = ventaService.listarVentas(1, limite);
             response.setStatus(HttpServletResponse.SC_OK);
             response.getWriter().write(gson.toJson(ApiResponse.ok("Ultimas ventas", ventas)));
@@ -97,6 +128,26 @@ public class VentaApiServlet extends HttpServlet {
             return value == null ? 10 : Integer.parseInt(value);
         } catch (NumberFormatException ex) {
             return 10;
+        }
+    }
+
+    private Integer parseOptionalInt(String value) {
+        try {
+            return value == null || value.trim().isEmpty() ? null : Integer.valueOf(value);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private Long obtenerId(HttpServletRequest request) {
+        String pathInfo = request.getPathInfo();
+        if (pathInfo == null || pathInfo.length() <= 1) {
+            return null;
+        }
+        try {
+            return Long.valueOf(pathInfo.substring(1));
+        } catch (NumberFormatException ex) {
+            return null;
         }
     }
 
