@@ -332,6 +332,35 @@ public class CompraDAO {
         }
     }
 
+    public boolean actualizarProveedor(ProveedorDTO proveedor) {
+        String sql = "UPDATE proveedores SET ruc = ?, razon_social = ?, contacto = ?, telefono = ?, email = ?, direccion = ?, activo = ? WHERE id = ?";
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, proveedor.getRuc());
+            ps.setString(2, proveedor.getRazonSocial());
+            ps.setString(3, proveedor.getContacto());
+            ps.setString(4, proveedor.getTelefono());
+            ps.setString(5, proveedor.getEmail());
+            ps.setString(6, proveedor.getDireccion());
+            ps.setBoolean(7, proveedor.isActivo());
+            ps.setLong(8, proveedor.getId());
+            return ps.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al actualizar proveedor", ex);
+        }
+    }
+
+    public boolean eliminarProveedor(Long id) {
+        String sql = "UPDATE proveedores SET activo = 0 WHERE id = ?";
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setLong(1, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al eliminar proveedor", ex);
+        }
+    }
+
     private void prepararCompra(Connection con, TransaccionDTO compra, List<DetalleTransaccionDTO> detalles) throws SQLException {
         compra.setTipoTransaccionId(TransaccionDTO.TIPO_COMPRA);
         if (compra.getNumeroTransaccion() == null || compra.getNumeroTransaccion().isEmpty()) {

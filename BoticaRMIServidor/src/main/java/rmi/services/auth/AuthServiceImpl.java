@@ -42,7 +42,20 @@ public class AuthServiceImpl extends UnicastRemoteObject implements AuthServiceR
 
     @Override
     public boolean cambiarPassword(Long usuarioId, String passwordActual, String nuevaPassword) throws RemoteException {
-        throw new UnsupportedOperationException("Cambio de password pendiente de implementar");
+        if (usuarioId == null || passwordActual == null || passwordActual.trim().isEmpty()
+                || nuevaPassword == null || nuevaPassword.trim().isEmpty()) {
+            return false;
+        }
+
+        UsuarioDTO usuario = usuarioDAO.buscarPorIdConPassword(usuarioId);
+        if (usuario == null || !usuario.isActivo() || usuario.getPassword() == null) {
+            return false;
+        }
+        if (!BCrypt.checkpw(passwordActual, usuario.getPassword())) {
+            return false;
+        }
+        String hash = BCrypt.hashpw(nuevaPassword, BCrypt.gensalt());
+        return usuarioDAO.actualizarPassword(usuarioId, hash);
     }
 
     @Override

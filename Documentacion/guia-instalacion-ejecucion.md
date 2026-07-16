@@ -45,18 +45,16 @@ Si el integrante va a desarrollar, debe cambiar a su rama asignada:
 
 ```powershell
 git fetch origin
-git checkout feature/backend-rmi-api
+git checkout funcionalidad/backend
 ```
 
 Ramas disponibles:
 
 ```text
 develop
-feature/backend-rmi-api
-feature/web-cliente
-feature/mobile-flutter
-feature/database
-feature/documentacion
+funcionalidad/backend
+funcionalidad/web
+funcionalidad/movil
 ```
 
 ## 3. Estructura Principal
@@ -450,22 +448,22 @@ Antes de empezar a trabajar, ubicarse en la rama asignada.
 Ejemplo para backend:
 
 ```powershell
-git checkout feature/backend-rmi-api
-git pull origin feature/backend-rmi-api
+git checkout funcionalidad/backend
+git pull origin funcionalidad/backend
 ```
 
 Ejemplo para web:
 
 ```powershell
-git checkout feature/web-cliente
-git pull origin feature/web-cliente
+git checkout funcionalidad/web
+git pull origin funcionalidad/web
 ```
 
 Ejemplo para movil:
 
 ```powershell
-git checkout feature/mobile-flutter
-git pull origin feature/mobile-flutter
+git checkout funcionalidad/movil
+git pull origin funcionalidad/movil
 ```
 
 Si solo se quiere ejecutar la version estable del proyecto:
@@ -497,16 +495,14 @@ Ramas del equipo:
 |---|---|---|
 | `main` | Version estable para entrega | Daniel |
 | `develop` | Integracion y pruebas generales | Daniel |
-| `feature/backend-rmi-api` | RMI, API REST y Postman | Daniel y Hector |
-| `feature/web-cliente` | Cliente web JSP/Servlet | Arnold y Daniel |
-| `feature/mobile-flutter` | App movil Flutter | Alexander y Daniel |
-| `feature/database` | SQL, datos, triggers y validaciones | Daniel con apoyo del equipo |
-| `feature/documentacion` | README, guias e informe tecnico | Daniel y Arnold |
+| `funcionalidad/backend` | RMI, API REST y Postman | Daniel y Hector |
+| `funcionalidad/web` | Cliente web JSP/Servlet | Arnold y Daniel |
+| `funcionalidad/movil` | App movil Flutter | Alexander y Daniel |
 
 Flujo obligatorio:
 
 ```text
-feature/* -> develop -> main
+funcionalidad/* -> develop -> main
 ```
 
 Para subir cambios en la rama asignada:
@@ -622,19 +618,19 @@ git pull
 Cambiar a rama backend:
 
 ```powershell
-git checkout feature/backend-rmi-api
+git checkout funcionalidad/backend
 ```
 
 Cambiar a rama web:
 
 ```powershell
-git checkout feature/web-cliente
+git checkout funcionalidad/web
 ```
 
 Cambiar a rama movil:
 
 ```powershell
-git checkout feature/mobile-flutter
+git checkout funcionalidad/movil
 ```
 
 ## 18. Checklist Final

@@ -30,7 +30,7 @@ public class VentaServiceImpl extends UnicastRemoteObject implements VentaServic
 
     @Override
     public TransaccionDTO buscarPorNumero(String numero) throws RemoteException {
-        throw new UnsupportedOperationException("Busqueda por numero pendiente");
+        return ventaDAO.buscarPorNumero(numero);
     }
 
     @Override
@@ -55,7 +55,7 @@ public class VentaServiceImpl extends UnicastRemoteObject implements VentaServic
 
     @Override
     public boolean anular(Long id) throws RemoteException {
-        throw new UnsupportedOperationException("Anulacion pendiente");
+        return ventaDAO.anular(id);
     }
 
     @Override

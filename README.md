@@ -5,7 +5,7 @@ Sistema distribuido para la gestion de una botica con interfaz web, interfaz mov
 ## Componentes
 
 ```text
-BoticaAPIREST/          API HTTP/JSON para Flutter y Postman
+BoticaAPIREST/          API HTTP/JSON para Web, Flutter y Postman
 BoticaMobileFlutter/    Aplicacion movil Flutter
 BoticaRMIInterface/     Interfaces remotas Java RMI
 BoticaRMIServidor/      Servidor e implementaciones RMI
@@ -37,12 +37,12 @@ Postman
 BoticaMobileFlutter
 ```
 
-`BoticaMobileFlutter` sera proyecto Flutter cuando se cree con Flutter SDK.
+`BoticaMobileFlutter` es el proyecto Flutter de la aplicacion movil.
 
 ## Arquitectura
 
 ```text
-Web JSP -> Servlets Web -> RMI -> DAO/JDBC -> MySQL
+Web JSP/Servlet -> API JSON -> RMI -> DAO/JDBC -> MySQL
 Flutter -> API JSON -> RMI -> DAO/JDBC -> MySQL
 ```
 
@@ -111,13 +111,11 @@ Ramas del proyecto:
 |---|---|---|
 | `main` | Version estable del proyecto | Daniel |
 | `develop` | Integracion antes de pasar a `main` | Daniel |
-| `feature/backend-rmi-api` | RMI, API REST, DTOs y Postman | Daniel y Hector |
-| `feature/web-cliente` | Cliente web JSP/Servlet | Arnold y Daniel |
-| `feature/mobile-flutter` | App movil Flutter | Alexander y Daniel |
-| `feature/database` | Base de datos, datos y triggers | Daniel con apoyo del equipo |
-| `feature/documentacion` | README, guias e informe tecnico | Daniel y Arnold |
+| `funcionalidad/backend` | RMI, API REST, DTOs y Postman | Daniel y Hector |
+| `funcionalidad/web` | Cliente web JSP/Servlet | Arnold y Daniel |
+| `funcionalidad/movil` | App movil Flutter | Alexander y Daniel |
 
-Regla principal: nadie debe trabajar directo en `main`. Los cambios se hacen en ramas `feature/*`, se integran primero en `develop`, se prueban y luego pasan a `main`.
+Regla principal: nadie debe trabajar directo en `main`. Los cambios se hacen en ramas `funcionalidad/*`, se integran primero en `develop`, se prueban y luego pasan a `main`.
 
 Antes de subir cambios:
 

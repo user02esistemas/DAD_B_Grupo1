@@ -5,8 +5,10 @@ EconoSalud se organiza como un sistema distribuido con dos interfaces: web y mov
 ## Flujo Web
 
 ```text
-BoticaWebCliente -> BoticaRMIInterface -> BoticaRMIServidor -> MySQL/MariaDB
+BoticaWebCliente -> BoticaAPIREST -> BoticaRMIInterface -> BoticaRMIServidor -> MySQL/MariaDB
 ```
+
+El cliente web no accede a DAOs locales ni a JDBC. Sus servlets y JSP consumen clientes `integration.api.*`, que invocan la API REST y esta delega en RMI.
 
 ## Flujo Movil
 
@@ -33,13 +35,13 @@ Modulos moviles iniciales:
 | Dashboard | `/api/dashboard/resumen` | `DashboardService` |
 | Productos | `/api/productos` | `ProductoService` |
 
-Modulos moviles pendientes y su integracion esperada:
+Modulos moviles integrados y su endpoint principal:
 
 | Modulo Flutter | Endpoint REST esperado | Servicio RMI |
 |---|---|---|
 | Ventas | `/api/ventas`, `/api/ventas/ultimas` | `VentaService` |
 | Compras | `/api/compras`, `/api/compras/proveedores` | `CompraService` |
-| Caja | Pendiente de endpoint API | `VentaService` / sesiones de caja |
+| Caja | `/api/caja/*` | `VentaService` / sesiones de caja |
 | Usuarios | `/api/usuarios` | `UsuarioService` |
 | Reportes | `/api/reportes/ventas`, `/api/reportes/productos-mas-vendidos` | `ReporteService` |
 

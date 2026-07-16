@@ -102,12 +102,12 @@ public class CompraServiceImpl extends UnicastRemoteObject implements CompraServ
 
     @Override
     public boolean actualizarProveedor(ProveedorDTO proveedor) throws RemoteException {
-        throw new UnsupportedOperationException("Actualizacion de proveedor pendiente");
+        return compraDAO.actualizarProveedor(proveedor);
     }
 
     @Override
     public boolean eliminarProveedor(Long id) throws RemoteException {
-        throw new UnsupportedOperationException("Eliminacion de proveedor pendiente");
+        return compraDAO.eliminarProveedor(id);
     }
 
     @Override

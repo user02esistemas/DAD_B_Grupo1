@@ -47,6 +47,22 @@ public class UsuarioDAO {
         }
     }
 
+    public UsuarioDTO buscarPorIdConPassword(Long id) {
+        String sql = "SELECT id, username, password, email, nombre_completo, dni, "
+                + "telefono, activo, created_at, updated_at "
+                + "FROM usuarios WHERE id = ?";
+
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setLong(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? mapearUsuario(rs, true) : null;
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al buscar usuario", ex);
+        }
+    }
+
     public UsuarioDTO buscarPorUsername(String username) {
         String sql = "SELECT id, username, password, email, nombre_completo, dni, "
                 + "telefono, activo, created_at, updated_at "

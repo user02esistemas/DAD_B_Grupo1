@@ -23,3 +23,7 @@ BoticaMobileFlutter/.packages
 # Sistema operativo
 .DS_Store
 Thumbs.db
+
+# Herramientas locales de agente
+.agents/
+skills-lock.json

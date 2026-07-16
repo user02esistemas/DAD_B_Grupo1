@@ -57,11 +57,9 @@ Ramas oficiales:
 ```text
 main
 develop
-feature/backend-rmi-api
-feature/web-cliente
-feature/mobile-flutter
-feature/database
-feature/documentacion
+funcionalidad/backend
+funcionalidad/web
+funcionalidad/movil
 ```
 
 Uso de ramas:
@@ -70,16 +68,14 @@ Uso de ramas:
 |---|---|---|
 | `main` | Version estable y lista para presentar | Daniel |
 | `develop` | Integracion y pruebas antes de pasar a `main` | Daniel |
-| `feature/backend-rmi-api` | Contratos RMI, servidor RMI, API REST y Postman | Daniel y Hector |
-| `feature/web-cliente` | Cliente web JSP/Servlet y vistas | Arnold y Daniel |
-| `feature/mobile-flutter` | Aplicacion movil Flutter | Alexander y Daniel |
-| `feature/database` | Script SQL, triggers, datos y validaciones de base de datos | Daniel con apoyo del equipo |
-| `feature/documentacion` | README, guias tecnicas e informe | Daniel y Arnold |
+| `funcionalidad/backend` | Contratos RMI, servidor RMI, API REST y Postman | Daniel y Hector |
+| `funcionalidad/web` | Cliente web JSP/Servlet y vistas | Arnold y Daniel |
+| `funcionalidad/movil` | Aplicacion movil Flutter | Alexander y Daniel |
 
 Flujo de trabajo:
 
 ```text
-feature/* -> develop -> main
+funcionalidad/* -> develop -> main
 ```
 
 Reglas:
@@ -94,17 +90,17 @@ Comandos para cambiar a la rama asignada:
 
 ```powershell
 git fetch origin
-git checkout feature/backend-rmi-api
-git pull origin feature/backend-rmi-api
+git checkout funcionalidad/backend
+git pull origin funcionalidad/backend
 ```
 
 Ejemplos por integrante:
 
 ```text
-Daniel: develop, feature/backend-rmi-api, feature/database, feature/documentacion
-Hector: feature/backend-rmi-api
-Alexander: feature/mobile-flutter
-Arnold: feature/web-cliente, feature/documentacion
+Daniel: main, develop, funcionalidad/backend
+Hector: funcionalidad/backend
+Alexander: funcionalidad/movil
+Arnold: funcionalidad/web
 ```
 
 Subir cambios de una rama:

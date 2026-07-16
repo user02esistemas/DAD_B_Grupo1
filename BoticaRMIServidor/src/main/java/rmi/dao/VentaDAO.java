@@ -67,6 +67,40 @@ public class VentaDAO {
         }
     }
 
+    public TransaccionDTO buscarPorNumero(String numero) {
+        String sql = "SELECT t.*, tt.nombre AS tipo_nombre, u.nombre_completo AS usuario_nombre "
+                + "FROM transacciones t "
+                + "INNER JOIN tipos_transaccion tt ON t.tipo_transaccion_id = tt.id "
+                + "LEFT JOIN usuarios u ON t.usuario_id = u.id "
+                + "WHERE t.numero_transaccion = ? AND t.tipo_transaccion_id = 2";
+
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, numero);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+                TransaccionDTO venta = mapearVenta(rs);
+                venta.setDetalles(obtenerDetalles(con, venta.getId()));
+                return venta;
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al buscar venta por numero", ex);
+        }
+    }
+
+    public boolean anular(Long id) {
+        String sql = "UPDATE transacciones SET estado = 'ANULADA' WHERE id = ? AND tipo_transaccion_id = 2";
+        try (Connection con = DatabaseConfig.getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setLong(1, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Error al anular venta", ex);
+        }
+    }
+
     public List<TransaccionDTO> listarUltimas(int limite) {
         String sql = "SELECT t.*, tt.nombre AS tipo_nombre, u.nombre_completo AS usuario_nombre "
                 + "FROM transacciones t "
