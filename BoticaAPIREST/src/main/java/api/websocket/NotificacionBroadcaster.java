@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import rmi.dto.NotificacionDTO;
 
 public final class NotificacionBroadcaster {
 

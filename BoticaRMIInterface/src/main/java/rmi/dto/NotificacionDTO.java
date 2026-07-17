@@ -1,9 +1,12 @@
-package api.websocket;
+package rmi.dto;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-public class NotificacionDTO {
+public class NotificacionDTO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private final String tipo;
     private final String titulo;
