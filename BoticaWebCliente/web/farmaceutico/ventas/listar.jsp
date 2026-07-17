@@ -110,7 +110,7 @@
                                             <% String tipoComp = v.getTipoComprobante();
                                                String badgeClass = "bg-secondary";
                                                if ("BOLETA".equals(tipoComp)) badgeClass = "bg-primary";
-                                               else if ("FACTURA".equals(tipoComp)) badgeClass = "bg-success";
+                                                else if ("FACTURA".equals(tipoComp)) badgeClass = "bg-primary";
                                             %>
                                             <span class="badge <%= badgeClass %>"><%= tipoComp != null ? tipoComp.replace("_", " ") : "NOTA" %></span>
                                         </td>
@@ -125,7 +125,7 @@
                                             <% } else if (tieneVirtual) { %>
                                                 <span class="badge bg-warning text-dark"><%= v.getMedioPagoVirtual() %></span>
                                             <% } else { %>
-                                                <span class="badge bg-success">EFECTIVO</span>
+                                                <span class="badge bg-primary">EFECTIVO</span>
                                             <% } %>
                                         </td>
                                         <td class="text-end"><strong>S/ <%= String.format("%.2f", v.getTotal()) %></strong></td>

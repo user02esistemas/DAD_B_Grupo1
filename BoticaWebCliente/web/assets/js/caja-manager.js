@@ -19,6 +19,21 @@ var CajaManager = (function() {
     var efectivoEsperado = 0;
     var modalAbrir = null;
     var modalCerrar = null;
+
+    function mostrarMensaje(elementId, mensaje, tipo) {
+        var target = document.getElementById(elementId);
+        if (!target) return;
+        var icon = tipo === 'danger' ? 'exclamation-triangle' : (tipo === 'warning' ? 'exclamation-circle' : 'check-circle');
+        target.className = 'alert alert-' + (tipo || 'info') + ' d-flex align-items-start gap-2';
+        target.innerHTML = '<i class="bi bi-' + icon + ' mt-1"></i><div>' + mensaje + '</div>';
+    }
+
+    function limpiarMensaje(elementId) {
+        var target = document.getElementById(elementId);
+        if (!target) return;
+        target.className = 'd-none';
+        target.innerHTML = '';
+    }
     
     // =====================================================
     //     INICIALIZACIÓN
@@ -77,6 +92,7 @@ var CajaManager = (function() {
     
     function mostrarAbrir() {
         cajaSeleccionada = null;
+        limpiarMensaje('mensajeAbrirCaja');
         
         var inputMonto = document.getElementById('montoInicialAbrir');
         if (inputMonto) inputMonto.value = '';
@@ -85,7 +101,7 @@ var CajaManager = (function() {
         var container = document.getElementById('cajasDisponiblesContainer');
         if (container) {
             container.innerHTML = '<div class="text-center py-3">' +
-                '<div class="spinner-border spinner-border-sm text-success" role="status"></div>' +
+                '<div class="spinner-border spinner-border-sm text-primary" role="status"></div>' +
                 '<p class="mb-0 mt-2 small text-muted">Cargando cajas...</p></div>';
         }
         
@@ -131,7 +147,7 @@ var CajaManager = (function() {
             html += '<label class="caja-option ' + selectedClass + '" onclick="CajaManager.seleccionarCaja(' + c.id + ', this)">' +
                 '<input type="radio" name="cajaSeleccion" value="' + c.id + '"' + (isFirst ? ' checked' : '') + '>' +
                 '<div class="d-flex align-items-center">' +
-                '<i class="bi bi-safe fs-3 me-3 text-success"></i>' +
+                '<i class="bi bi-safe fs-3 me-3 text-primary"></i>' +
                 '<div>' +
                 '<strong>' + c.nombre + '</strong>' +
                 '<small class="d-block text-muted">' + (c.ubicacion || 'Ubicación principal') + '</small>' +
@@ -156,7 +172,7 @@ var CajaManager = (function() {
     
     function confirmarAbrir() {
         if (!cajaSeleccionada) {
-            alert('Por favor selecciona una caja');
+            mostrarMensaje('mensajeAbrirCaja', 'Por favor selecciona una caja disponible para iniciar el turno.', 'warning');
             return;
         }
         
@@ -185,13 +201,13 @@ var CajaManager = (function() {
                 if (modalAbrir) modalAbrir.hide();
                 window.location.reload();
             } else {
-                alert('Error: ' + (data.error || 'No se pudo abrir la caja'));
+                mostrarMensaje('mensajeAbrirCaja', data.error || 'No se pudo abrir la caja.', 'danger');
                 resetBotonAbrir(btn);
             }
         })
         .catch(function(error) {
             console.error('Error:', error);
-            alert('Error al abrir caja: ' + error);
+            mostrarMensaje('mensajeAbrirCaja', 'Error al abrir caja. Verifica la conexión e inténtalo nuevamente.', 'danger');
             resetBotonAbrir(btn);
         });
     }
@@ -209,7 +225,7 @@ var CajaManager = (function() {
     
     function mostrarCerrar() {
         if (typeof sesionCajaId === 'undefined' || !sesionCajaId) {
-            alert('No hay sesión de caja activa');
+            mostrarMensaje('mensajeCerrarCaja', 'No hay una sesión de caja activa para cerrar.', 'warning');
             return;
         }
         
@@ -217,12 +233,14 @@ var CajaManager = (function() {
             .then(function(response) { return response.json(); })
             .then(function(sesion) {
                 llenarDatosCierre(sesion);
+                limpiarMensaje('mensajeCerrarCaja');
+                cancelarConfirmacionCerrar();
                 modalCerrar = new bootstrap.Modal(document.getElementById('modalCerrarCaja'));
                 modalCerrar.show();
             })
             .catch(function(error) {
                 console.error('Error:', error);
-                alert('Error al obtener resumen de caja');
+                mostrarMensaje('mensajeCerrarCaja', 'Error al obtener el resumen de caja.', 'danger');
             });
     }
     
@@ -288,7 +306,7 @@ var CajaManager = (function() {
         
         if (Math.abs(diferencia) < 0.01) {
             difElement.textContent = 'S/ 0.00 (Cuadrado)';
-            cardDif.className = 'card mb-3 bg-success text-white';
+            cardDif.className = 'card mb-3 bg-primary text-white';
         } else if (diferencia > 0) {
             difElement.textContent = '+S/ ' + diferencia.toFixed(2) + ' (Sobrante)';
             cardDif.className = 'card mb-3 bg-warning';
@@ -301,20 +319,36 @@ var CajaManager = (function() {
     function confirmarCerrar() {
         var montoFinal = document.getElementById('montoFinalCierre').value;
         if (!montoFinal || montoFinal === '') {
-            alert('Ingrese el monto final contado en caja');
+            mostrarMensaje('mensajeCerrarCaja', 'Ingrese el monto final contado en caja antes de cerrar el turno.', 'warning');
             document.getElementById('montoFinalCierre').focus();
             return;
         }
-        
-        if (!confirm('¿Está seguro de cerrar la caja? Esta acción no se puede deshacer.')) {
+
+        limpiarMensaje('mensajeCerrarCaja');
+        var panel = document.getElementById('confirmacionCerrarCaja');
+        if (panel) panel.classList.remove('d-none');
+    }
+
+    function cancelarConfirmacionCerrar() {
+        var panel = document.getElementById('confirmacionCerrarCaja');
+        if (panel) panel.classList.add('d-none');
+    }
+
+    function ejecutarCerrar() {
+        var montoFinal = document.getElementById('montoFinalCierre').value;
+        if (!montoFinal || montoFinal === '') {
+            mostrarMensaje('mensajeCerrarCaja', 'Ingrese el monto final contado en caja antes de cerrar el turno.', 'warning');
+            document.getElementById('montoFinalCierre').focus();
+            cancelarConfirmacionCerrar();
             return;
         }
-        
+
         var btn = document.getElementById('btnConfirmarCerrar');
         if (btn) {
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Cerrando...';
         }
+        cancelarConfirmacionCerrar();
         
         var observaciones = document.getElementById('observacionesCierre').value;
         
@@ -328,32 +362,34 @@ var CajaManager = (function() {
         .then(function(data) {
             if (data.success) {
                 var diferencia = parseFloat(data.diferencia) || 0;
-                var msg = 'Caja cerrada correctamente.\n\n';
+                var msg = '<strong>Caja cerrada correctamente.</strong><br>';
                 
                 if (diferencia > 0) {
-                    msg += '📈 Sobrante: S/ ' + diferencia.toFixed(2);
+                    msg += 'Sobrante: S/ ' + diferencia.toFixed(2);
                 } else if (diferencia < 0) {
-                    msg += '📉 Faltante: S/ ' + Math.abs(diferencia).toFixed(2);
+                    msg += 'Faltante: S/ ' + Math.abs(diferencia).toFixed(2);
                 } else {
-                    msg += '✅ Caja cuadrada - Sin diferencias';
+                    msg += 'Caja cuadrada, sin diferencias.';
                 }
                 
-                alert(msg);
+                mostrarMensaje('mensajeCerrarCaja', msg, 'success');
                 
                 // Redirigir según contexto
-                if (typeof urlRetorno !== 'undefined' && urlRetorno) {
-                    window.location.href = urlRetorno;
-                } else {
-                    window.location.reload();
-                }
+                setTimeout(function() {
+                    if (typeof urlRetorno !== 'undefined' && urlRetorno) {
+                        window.location.href = urlRetorno;
+                    } else {
+                        window.location.reload();
+                    }
+                }, 1100);
             } else {
-                alert('Error: ' + (data.error || 'No se pudo cerrar la caja'));
+                mostrarMensaje('mensajeCerrarCaja', data.error || 'No se pudo cerrar la caja.', 'danger');
                 resetBotonCerrar(btn);
             }
         })
         .catch(function(error) {
             console.error('Error:', error);
-            alert('Error al cerrar caja: ' + error);
+            mostrarMensaje('mensajeCerrarCaja', 'Error al cerrar caja. Verifica la conexión e inténtalo nuevamente.', 'danger');
             resetBotonCerrar(btn);
         });
     }
@@ -373,6 +409,8 @@ var CajaManager = (function() {
         seleccionarCaja: seleccionarCaja,
         confirmarAbrir: confirmarAbrir,
         confirmarCerrar: confirmarCerrar,
+        ejecutarCerrar: ejecutarCerrar,
+        cancelarConfirmacionCerrar: cancelarConfirmacionCerrar,
         calcularDiferencia: calcularDiferencia
     };
     

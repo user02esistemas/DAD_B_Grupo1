@@ -45,7 +45,7 @@
     /* Barra de búsqueda */
     .search-bar {
         padding: 15px;
-        background: linear-gradient(135deg, #1a5a4c 0%, #2d8a7a 100%);
+        background: linear-gradient(135deg, #035b77 0%, #0b7896 100%);
         border-radius: 10px 10px 0 0;
     }
 
@@ -104,7 +104,7 @@
     }
 
     .autocomplete-item:hover, .autocomplete-item.active {
-        background: #f0f9f7;
+        background: #eef8fb;
     }
 
     .autocomplete-item:last-child {
@@ -147,8 +147,8 @@
     }
 
     .form-check-input:checked {
-        background-color: #1a5a4c;
-        border-color: #1a5a4c;
+        background-color: #035b77;
+        border-color: #035b77;
     }
 
     /* Tabla de productos */
@@ -230,7 +230,7 @@
     /* Panel resumen */
     .resumen-header {
         padding: 20px;
-        background: linear-gradient(135deg, #1a5a4c 0%, #2d8a7a 100%);
+        background: linear-gradient(135deg, #035b77 0%, #0b7896 100%);
         color: #fff;
         border-radius: 10px 10px 0 0;
     }
@@ -266,9 +266,9 @@
     }
 
     .resumen-item input:focus, .resumen-item select:focus {
-        border-color: #1a5a4c;
+        border-color: #035b77;
         outline: none;
-        box-shadow: 0 0 0 3px rgba(26, 90, 76, 0.1);
+        box-shadow: 0 0 0 3px rgba(3, 91, 119, 0.12);
     }
 
     .detalle-totales {
@@ -288,7 +288,7 @@
     .linea-total.total-final {
         font-weight: 700;
         font-size: 18px;
-        color: #1a5a4c;
+        color: #035b77;
         border-top: 1px solid #ddd;
         padding-top: 10px;
         margin-top: 10px;
@@ -302,7 +302,7 @@
     .btn-confirmar {
         width: 100%;
         padding: 15px;
-        background: linear-gradient(135deg, #1a5a4c 0%, #2d8a7a 100%);
+        background: linear-gradient(135deg, #035b77 0%, #0b7896 100%);
         color: #fff;
         border: none;
         border-radius: 10px;
@@ -318,7 +318,7 @@
 
     .btn-confirmar:hover:not(:disabled) {
         transform: translateY(-2px);
-        box-shadow: 0 5px 20px rgba(26, 90, 76, 0.3);
+        box-shadow: 0 5px 20px rgba(3, 91, 119, 0.25);
     }
 
     .btn-confirmar:disabled {
@@ -349,8 +349,8 @@
     }
 
     .btn-accion:hover {
-        border-color: #1a5a4c;
-        color: #1a5a4c;
+        border-color: #035b77;
+        color: #035b77;
     }
 
     /* Modal de producto */
@@ -360,7 +360,7 @@
     }
 
     .modal-producto .modal-header {
-        background: linear-gradient(135deg, #1a5a4c 0%, #2d8a7a 100%);
+        background: linear-gradient(135deg, #035b77 0%, #0b7896 100%);
         color: #fff;
         border-radius: 15px 15px 0 0;
         padding: 20px;
@@ -384,7 +384,7 @@
     }
 
     .stock-actual strong {
-        color: #1a5a4c;
+        color: #035b77;
         font-size: 18px;
     }
 
@@ -405,15 +405,15 @@
     }
 
     .seccion-precios {
-        background: #f0f9f7;
+        background: #eef8fb;
         border-radius: 10px;
         padding: 15px;
         margin-top: 10px;
-        border: 1px dashed #1a5a4c;
+        border: 1px dashed #035b77;
     }
 
     .seccion-precios h6 {
-        color: #1a5a4c;
+        color: #035b77;
         margin-bottom: 15px;
         display: flex;
         align-items: center;
@@ -434,7 +434,7 @@
 
     .precio-sugerido .valor {
         font-weight: 600;
-        color: #1a5a4c;
+        color: #035b77;
     }
 
     .btn-aplicar-precio {
@@ -442,7 +442,7 @@
         height: 28px;
         border-radius: 50%;
         border: none;
-        background: #1a5a4c;
+        background: #035b77;
         color: #fff;
         cursor: pointer;
         font-size: 12px;
@@ -471,7 +471,7 @@
         width: 40px;
         height: 40px;
         border: 3px solid #f3f3f3;
-        border-top: 3px solid #1a5a4c;
+        border-top: 3px solid #035b77;
         border-radius: 50%;
         animation: spin 1s linear infinite;
         margin: 0 auto;
@@ -566,12 +566,12 @@
                         <!-- Estado vacío inicial -->
                         <div class="estado-vacio" id="estadoVacio">
                             <svg width="150" height="150" viewBox="0 0 200 200" fill="none">
-                            <circle cx="100" cy="100" r="80" fill="#f0f9f7"/>
-                            <rect x="70" y="60" width="60" height="80" rx="5" fill="#1a5a4c" opacity="0.2"/>
-                            <rect x="80" y="70" width="40" height="8" rx="2" fill="#1a5a4c" opacity="0.4"/>
-                            <rect x="80" y="85" width="30" height="6" rx="2" fill="#1a5a4c" opacity="0.3"/>
-                            <circle cx="130" cy="130" r="30" fill="#2d8a7a" opacity="0.3"/>
-                            <text x="122" y="138" font-size="30" fill="#1a5a4c">+</text>
+                            <circle cx="100" cy="100" r="80" fill="#eef8fb"/>
+                            <rect x="70" y="60" width="60" height="80" rx="5" fill="#035b77" opacity="0.2"/>
+                            <rect x="80" y="70" width="40" height="8" rx="2" fill="#035b77" opacity="0.4"/>
+                            <rect x="80" y="85" width="30" height="6" rx="2" fill="#035b77" opacity="0.3"/>
+                            <circle cx="130" cy="130" r="30" fill="#0b7896" opacity="0.3"/>
+                            <text x="122" y="138" font-size="30" fill="#035b77">+</text>
                             </svg>
                             <h4>Busca un medicamento para empezar</h4>
                             <p>Escribe en el buscador para agregar productos a la compra</p>
@@ -798,7 +798,7 @@
 <div class="toast-container">
     <div id="toastNotificacion" class="toast" role="alert">
         <div class="toast-header">
-            <i class="bi bi-check-circle text-success me-2" id="toastIcon"></i>
+            <i class="bi bi-check-circle text-primary me-2" id="toastIcon"></i>
             <strong class="me-auto" id="toastTitulo">Notificación</strong>
             <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
         </div>
@@ -1379,7 +1379,7 @@
                 body.textContent = mensaje;
 
                 if (tipo === 'success') {
-                    icon.className = 'bi bi-check-circle text-success me-2';
+                    icon.className = 'bi bi-check-circle text-primary me-2';
                     titulo.textContent = 'Éxito';
                 } else if (tipo === 'error') {
                     icon.className = 'bi bi-exclamation-circle text-danger me-2';

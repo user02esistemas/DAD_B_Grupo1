@@ -47,7 +47,7 @@
     
     .badge-completada {
         background: #d4edda;
-        color: #155724;
+        color: #035b77;
     }
     
     .badge-anulada {
@@ -89,7 +89,7 @@
     .stat-card .valor {
         font-size: 28px;
         font-weight: 700;
-        color: #1a5a4c;
+        color: #035b77;
     }
     
     .stat-card .label {
@@ -292,7 +292,7 @@ function verDetalle(id) {
                 }).join('');
             }
             
-            var estadoBadge = compra.estado === 'COMPLETADA' ? 'bg-success' : 'bg-danger';
+            var estadoBadge = compra.estado === 'COMPLETADA' ? 'bg-primary' : 'bg-danger';
             var proveedorNombre = compra.proveedor ? compra.proveedor.razonSocial : 'Sin proveedor';
             var fechaFormateada = new Date(compra.fecha).toLocaleString();
             

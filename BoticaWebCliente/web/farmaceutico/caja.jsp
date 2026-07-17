@@ -54,13 +54,13 @@
     .venta-item { padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
     .venta-item:last-child { border-bottom: none; }
     .venta-numero { font-weight: 600; color: #333; }
-    .venta-total { font-size: 1.1rem; font-weight: bold; color: #28a745; }
+    .venta-total { font-size: 1.1rem; font-weight: bold; color: #035b77; }
     .metodo-badge { font-size: 0.7rem; padding: 3px 8px; border-radius: 4px; }
     
     .quick-action { padding: 25px 20px; border-radius: 12px; text-align: center; transition: all 0.3s ease; text-decoration: none; display: block; height: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
     .quick-action:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
     .quick-action i { font-size: 2.5rem; margin-bottom: 10px; }
-    .quick-action.pos { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+    .quick-action.pos { background: linear-gradient(135deg, #035b77 0%, #0b7896 100%); color: white; }
     .quick-action.pos.disabled { background: linear-gradient(135deg, #adb5bd 0%, #6c757d 100%); pointer-events: none; opacity: 0.7; }
     .quick-action.historial { background: linear-gradient(135deg, #035b77 0%, #0984a3 100%); color: white; }
 </style>
@@ -220,7 +220,7 @@
                                 </div>
                             </div>
                             <div id="sinAlertasStock" class="text-center py-3">
-                                <i class="bi bi-check-circle text-success fs-3"></i>
+                                <i class="bi bi-check-circle text-primary fs-3"></i>
                                 <p class="text-muted mb-0 mt-2 small">Stock OK</p>
                             </div>
                         </div>
@@ -253,7 +253,7 @@
                                 </div>
                             </div>
                             <div id="sinAlertasVencer" class="text-center py-3">
-                                <i class="bi bi-check-circle text-success fs-3"></i>
+                                <i class="bi bi-check-circle text-primary fs-3"></i>
                                 <p class="text-muted mb-0 mt-2 small">Sin vencimientos próximos</p>
                             </div>
                         </div>
@@ -423,7 +423,7 @@
 
     function obtenerBadgeMetodo(metodo) {
         switch(metodo) {
-            case 'EFECTIVO': return '<span class="metodo-badge bg-success text-white">Efectivo</span>';
+            case 'EFECTIVO': return '<span class="metodo-badge bg-primary text-white">Efectivo</span>';
             case 'YAPE_PLIN': return '<span class="metodo-badge text-white" style="background:#6f42c1;">Yape/Plin</span>';
             case 'TARJETA': return '<span class="metodo-badge bg-info text-white">Tarjeta</span>';
             case 'MIXTO': return '<span class="metodo-badge bg-warning text-dark">Mixto</span>';

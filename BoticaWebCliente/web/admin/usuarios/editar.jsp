@@ -192,7 +192,7 @@
                             <p><strong>Actualizado:</strong> <%= usuario.getUpdatedAt()%></p>
                             <p><strong>Estado:</strong> 
                                 <% if (usuario.isActivo()) {%>
-                                <span class="badge bg-success">Activo</span>
+                                <span class="badge bg-primary">Activo</span>
                                 <% } else {%>
                                 <span class="badge bg-danger">Inactivo</span>
                                 <% }%>

@@ -57,7 +57,7 @@
 
 <style>
     .productos-header {
-        background: linear-gradient(135deg, #2d5a7c 0%, #1a3a5c 100%);
+        background: linear-gradient(135deg, #035b77 0%, #0b7896 100%);
         color: white;
         padding: 20px;
         border-radius: 10px;
@@ -87,13 +87,13 @@
         color: #666;
     }
     
-    .stat-total .number { color: #1a5a4c; }
+    .stat-total .number { color: #035b77; }
     .stat-bajo .number { color: #ffc107; }
     .stat-agotado .number { color: #dc3545; }
-    .stat-vencer .number { color: #17a2b8; }
+    .stat-vencer .number { color: #0b7896; }
     
     .badge-stock-ok {
-        background: #28a745;
+        background: #0b7896;
         color: white;
     }
     
@@ -108,7 +108,7 @@
     }
     
     .badge-vigente {
-        background: #28a745;
+        background: #0b7896;
         color: white;
     }
     
@@ -123,7 +123,7 @@
     }
     
     .btn-ajustar {
-        background: #17a2b8;
+        background: #035b77;
         color: white;
         border: none;
         padding: 5px 12px;
@@ -133,7 +133,7 @@
     }
     
     .btn-ajustar:hover {
-        background: #138496;
+        background: #0b7896;
         color: white;
     }
     
@@ -143,7 +143,7 @@
     }
     
     .precio-venta {
-        color: #28a745;
+        color: #035b77;
         font-weight: bold;
     }
     
@@ -447,7 +447,7 @@
 <div class="toast-container position-fixed top-0 end-0 p-3">
     <div id="toastNotificacion" class="toast" role="alert">
         <div class="toast-header">
-            <i class="bi bi-check-circle text-success me-2" id="toastIcon"></i>
+            <i class="bi bi-check-circle text-primary me-2" id="toastIcon"></i>
             <strong class="me-auto" id="toastTitulo">Notificación</strong>
             <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
         </div>
@@ -568,7 +568,7 @@
         body.textContent = mensaje;
         
         if (tipo === 'success') {
-            icon.className = 'bi bi-check-circle text-success me-2';
+            icon.className = 'bi bi-check-circle text-primary me-2';
             titulo.textContent = 'Éxito';
         } else if (tipo === 'error') {
             icon.className = 'bi bi-exclamation-circle text-danger me-2';

@@ -82,7 +82,7 @@
                                     </td>
                                     <td>
                                         <% if (usuario.isActivo()) { %>
-                                        <span class="badge bg-success">Activo</span>
+                                        <span class="badge bg-primary">Activo</span>
                                         <% } else { %>
                                         <span class="badge bg-danger">Inactivo</span>
                                         <% }%>

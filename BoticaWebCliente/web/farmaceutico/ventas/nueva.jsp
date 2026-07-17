@@ -14,17 +14,20 @@
     }
     
     // Determinar rol para redirección al cerrar
-    boolean esAdmin = false;
+    boolean posEsAdmin = false;
     List<RolDTO> roles = (List<RolDTO>) session.getAttribute("roles");
     if (roles != null) {
         for (RolDTO rol : roles) {
             if ("ROLE_ADMIN".equals(rol.getNombre())) {
-                esAdmin = true;
+                posEsAdmin = true;
                 break;
             }
         }
     }
-    String urlRetorno = esAdmin ? "/admin/dashboard.jsp" : "/farmaceutico/caja.jsp";
+    String urlRetorno = posEsAdmin ? "/admin/dashboard.jsp" : "/farmaceutico/caja.jsp";
+    String username = usuario.getUsername();
+    String nombreCompleto = usuario.getNombreCompleto();
+    String rolActual = posEsAdmin ? "ADMIN" : "FARMACEUTICO";
     
     SesionCajaDTO sesionCaja = new CajaApiClient().buscarSesionAbierta(usuario.getId());
     boolean cajaCerrada = (sesionCaja == null);
@@ -43,6 +46,7 @@
     <title>Punto de Venta - Econosalud</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="<%= request.getContextPath() %>/assets/css/style.css" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -52,8 +56,16 @@
             height: 100vh;
             margin: 0;
         }
+        .pos-main {
+            min-width: 0;
+            min-height: 0;
+            height: calc(100vh - var(--navbar-height));
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
         .pos-header {
-            background: linear-gradient(135deg, #1a5a4c 0%, #2d8a7a 100%);
+            background: #035b77;
             color: white;
             padding: 10px 20px;
             display: flex;
@@ -64,30 +76,30 @@
         .pos-header .user-info { display: flex; align-items: center; gap: 15px; }
         .search-container {
             background: white;
-            padding: 15px 20px;
+            padding: 10px 16px;
             border-bottom: 1px solid #ddd;
         }
         .search-input {
-            font-size: 18px;
-            padding: 12px 20px;
-            border: 2px solid #1a5a4c;
+            font-size: 16px;
+            padding: 10px 18px;
+            border: 2px solid #035b77;
             border-radius: 30px;
             width: 100%;
         }
         .search-input:focus {
             outline: none;
-            box-shadow: 0 0 0 3px rgba(26, 90, 76, 0.2);
+            box-shadow: 0 0 0 3px rgba(3, 91, 119, 0.18);
         }
         .quick-menu {
             background: #fff;
-            padding: 8px 20px;
+            padding: 7px 16px;
             border-bottom: 1px solid #ddd;
             display: flex;
             gap: 20px;
             font-size: 13px;
         }
         .quick-menu a { color: #666; text-decoration: none; }
-        .quick-menu a:hover { color: #1a5a4c; }
+        .quick-menu a:hover { color: #035b77; }
         .pos-container {
             display: flex;
             height: calc(100vh - 140px);
@@ -139,7 +151,7 @@
         .product-name { font-weight: 500; }
         .quantity-cell {
             cursor: pointer;
-            color: #1a5a4c;
+            color: #035b77;
             font-weight: bold;
             text-decoration: underline;
         }
@@ -152,7 +164,7 @@
         }
         .total-display { text-align: right; margin-bottom: 20px; }
         .total-label { font-size: 14px; color: #666; }
-        .total-amount { font-size: 42px; font-weight: bold; color: #1a5a4c; }
+        .total-amount { font-size: 42px; font-weight: bold; color: #035b77; }
         .client-info {
             background: #f8f9fa;
             padding: 10px 15px;
@@ -175,10 +187,10 @@
             font-weight: 500;
             transition: all 0.2s;
         }
-        .action-btn:hover { border-color: #1a5a4c; background: #f8f9fa; }
+        .action-btn:hover { border-color: #035b77; background: #f8f9fa; }
         .action-btn i { font-size: 20px; }
-        .action-btn.primary { background: #1a5a4c; color: white; border: none; }
-        .action-btn.primary:hover { background: #2d8a7a; }
+        .action-btn.primary { background: #035b77; color: white; border: none; }
+        .action-btn.primary:hover { background: #0b7896; }
         .summary-totals {
             margin-top: auto;
             padding-top: 20px;
@@ -213,8 +225,8 @@
         .autocomplete-item:hover { background: #f8f9fa; }
         .autocomplete-item .name { font-weight: 500; color: #333; }
         .autocomplete-item .details { font-size: 12px; color: #666; margin-top: 4px; }
-        .autocomplete-item .stock { float: right; color: #28a745; font-weight: 500; }
-        .autocomplete-item .price { float: right; color: #1a5a4c; font-weight: bold; margin-left: 15px; }
+        .autocomplete-item .stock { float: right; color: #0b7896; font-weight: 500; }
+        .autocomplete-item .price { float: right; color: #035b77; font-weight: bold; margin-left: 15px; }
         .empty-state {
             display: flex;
             flex-direction: column;
@@ -255,8 +267,8 @@
             text-align: center;
             transition: all 0.2s;
         }
-        .metodo-pago-btn:hover { border-color: #1a5a4c; }
-        .metodo-pago-btn.active { border-color: #1a5a4c; background: #e8f5f2; }
+        .metodo-pago-btn:hover { border-color: #035b77; }
+        .metodo-pago-btn.active { border-color: #035b77; background: #eef8fb; }
         .metodo-pago-btn i { font-size: 24px; display: block; margin-bottom: 5px; }
         .metodo-pago-btn span { font-size: 12px; }
         
@@ -282,10 +294,12 @@
         .logo-img { width: 55px; height: auto; display: block; margin: 0 auto; }
         .pos-container.modern-pos {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 450px;
+            grid-template-columns: minmax(0, 1fr) 420px;
             gap: 10px;
-            padding: 10px 14px 12px;
-            background: #f6f4f1;
+            height: calc(100vh - var(--navbar-height) - 205px);
+            min-height: 0;
+            padding: 10px 14px;
+            background: #f4f7f9;
         }
         .workspace-panel {
             min-width: 0;
@@ -295,9 +309,9 @@
         }
         .pos-card {
             background: #fff;
-            border: 1px solid #eadfd3;
+            border: 1px solid #d7e8ee;
             border-radius: 14px;
-            box-shadow: 0 1px 8px rgba(34, 28, 20, 0.06);
+            box-shadow: 0 1px 8px rgba(3, 91, 119, 0.07);
             overflow: hidden;
         }
         .pos-card-header {
@@ -306,8 +320,8 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 16px;
-            border-bottom: 1px solid #eadfd3;
-            background: #fffaf6;
+            border-bottom: 1px solid #d7e8ee;
+            background: #f7fbfd;
             font-weight: 800;
             color: #20202a;
         }
@@ -326,13 +340,13 @@
             padding: 12px;
             cursor: pointer;
             color: #fff;
-            background: linear-gradient(180deg, rgba(10, 10, 10, 0.08), rgba(0, 0, 0, 0.78)), linear-gradient(135deg, #3b8b7b, #144f44);
+            background: linear-gradient(180deg, rgba(3, 91, 119, 0.04), rgba(0, 0, 0, 0.70)), linear-gradient(135deg, #0b7896, #035b77 52%, #03394d);
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
             transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
-        .quick-product-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(20, 79, 68, 0.16); }
+        .quick-product-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(3, 91, 119, 0.18); }
         .quick-product-name { font-weight: 800; font-size: 14px; line-height: 1.2; }
         .quick-product-meta { font-size: 11px; opacity: 0.85; margin-top: 3px; }
         .quick-product-price { font-size: 16px; font-weight: 900; margin-top: 4px; }
@@ -382,44 +396,46 @@
         .summary-panel.modern-summary {
             width: auto;
             padding: 0;
-            border: 1px solid #eadfd3;
+            height: 100%;
+            min-height: 0;
+            border: 1px solid #d7e8ee;
             border-radius: 14px;
-            box-shadow: 0 1px 8px rgba(34, 28, 20, 0.07);
+            box-shadow: 0 1px 8px rgba(3, 91, 119, 0.08);
             overflow: hidden;
         }
-        .summary-section { padding: 16px; border-bottom: 1px solid #eadfd3; }
+        .summary-section { padding: 14px; border-bottom: 1px solid #d7e8ee; }
         .summary-section:last-child { border-bottom: none; }
         .section-label { font-size: 11px; color: #7b7280; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 7px; }
         .side-input, .side-select {
             width: 100%;
-            height: 38px;
-            border: 1px solid #e2d4c4;
+            height: 36px;
+            border: 1px solid #cfe3eb;
             border-radius: 8px;
             padding: 0 12px;
-            background: #fffdfb;
+            background: #fbfdfe;
         }
         .side-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .total-display.modern-total { text-align: right; margin: 0; }
-        .total-display.modern-total .total-amount { font-size: 38px; color: #123f35; }
+        .total-display.modern-total .total-amount { font-size: 36px; color: #035b77; }
         .calc-card {
-            border: 1px solid #eadfd3;
+            border: 1px solid #d7e8ee;
             border-radius: 12px;
-            padding: 12px;
-            background: #fffaf6;
+            padding: 11px;
+            background: #f7fbfd;
         }
         .pay-button {
             width: 100%;
             border: none;
             border-radius: 14px;
-            background: #175c4c;
+            background: #035b77;
             color: #fff;
             font-weight: 900;
-            padding: 18px;
+            padding: 16px;
             letter-spacing: .04em;
         }
         .pay-button:disabled, .pay-button.disabled {
-            background: #eadfd3;
-            color: #9b9390;
+            background: #d7e8ee;
+            color: #6b8792;
         }
         @media (max-width: 1100px) {
             .pos-container.modern-pos { grid-template-columns: 1fr; overflow-y: auto; }
@@ -429,31 +445,33 @@
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <div class="pos-header">
-        <div class="d-flex align-items-center gap-3">
-            <a class="navbar-brand d-flex align-items-center" href="<%= request.getContextPath()%>/index.jsp">
-                <img src="<%= request.getContextPath()%>/assets/img/logo.png" alt="logo" class="logo-img" />
-                <span class="fw-bold">EconoSalud Farmacia</span>
-            </a>
-            <span class="badge bg-light text-dark" id="estadoCaja">
-                <% if (!cajaCerrada) { %>
-                    <i class="bi bi-unlock-fill text-success"></i> Caja Abierta
-                <% } else { %>
-                    <i class="bi bi-lock-fill text-danger"></i> Caja Cerrada
-                <% } %>
-            </span>
-        </div>
-        <div class="user-info">
-            <span><i class="bi bi-person-circle"></i> <%= usuario.getNombreCompleto() %></span>
-            <a href="<%= request.getContextPath() + urlRetorno %>" class="btn-volver">
-                <i class="bi bi-arrow-left"></i> Volver
-            </a>
-            <button class="btn-cerrar-turno" onclick="CajaManager.mostrarCerrar()">
-                <i class="bi bi-box-arrow-right"></i> Cerrar Turno
-            </button>
-        </div>
-    </div>
+    <%@ include file="/WEB-INF/includes/navbar.jsp" %>
+
+    <div class="container-fluid">
+        <div class="row">
+            <%@ include file="/WEB-INF/includes/sidebar.jsp" %>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 pos-main">
+                <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <div>
+                        <h1 class="h3 mb-1"><i class="bi bi-cash-stack me-2"></i>Punto de Venta</h1>
+                        <span class="badge bg-light text-dark border" id="estadoCaja">
+                            <% if (!cajaCerrada) { %>
+                                <i class="bi bi-unlock-fill text-primary"></i> Caja Abierta
+                            <% } else { %>
+                                <i class="bi bi-lock-fill text-danger"></i> Caja Cerrada
+                            <% } %>
+                        </span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="<%= request.getContextPath() + urlRetorno %>" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Volver
+                        </a>
+                        <button class="btn btn-danger" onclick="CajaManager.mostrarCerrar()">
+                            <i class="bi bi-box-arrow-right"></i> Cerrar Turno
+                        </button>
+                    </div>
+                </div>
 
     <!-- Buscador -->
     <div class="search-container">
@@ -467,7 +485,7 @@
     <!-- Menú rápido -->
     <div class="quick-menu">
         <a href="<%= request.getContextPath() %>/farmaceutico/ventas/listar.jsp"><i class="bi bi-clock-history"></i> Historial de Ventas</a>
-        <% if (esAdmin) { %>
+        <% if (posEsAdmin) { %>
         <a href="<%= request.getContextPath() %>/admin/inventario/listar.jsp"><i class="bi bi-boxes"></i> Inventario</a>
         <% } %>
     </div>
@@ -578,6 +596,9 @@
             </div>
         </aside>
     </div>
+        </main>
+    </div>
+    </div>
 
     <!-- Modales de Caja (unificados) -->
     <%@ include file="/WEB-INF/includes/caja/modal-abrir.jsp" %>
@@ -602,7 +623,7 @@
                             <label class="form-label fw-bold mb-2">Método de Pago:</label>
                             <div class="d-flex gap-2 mb-4">
                                 <div class="metodo-pago-btn active" data-metodo="EFECTIVO" onclick="seleccionarMetodoPago('EFECTIVO')">
-                                    <i class="bi bi-cash-coin text-success"></i>
+                                    <i class="bi bi-cash-coin text-primary"></i>
                                     <span>Efectivo</span>
                                 </div>
                                 <div class="metodo-pago-btn" data-metodo="YAPE" onclick="seleccionarMetodoPago('YAPE')">
@@ -649,7 +670,7 @@
                                     Pago: <strong id="metodoVirtualNombre">YAPE</strong><br>
                                     <small>Monto: <strong>S/. <span id="montoVirtualDisplay">0.00</span></strong></small>
                                 </div>
-                                <div class="card bg-success text-white">
+                                <div class="card text-white" style="background: #035b77;">
                                     <div class="card-body text-center py-3">
                                         <i class="bi bi-check-circle" style="font-size: 40px;"></i>
                                         <p class="mb-0 mt-2">Sin vuelto - Pago exacto</p>
@@ -701,7 +722,7 @@
                             </div>
                             
                             <hr>
-                            <button class="btn btn-success btn-lg w-100" id="btnConfirmarVenta" onclick="procesarVenta()">
+                            <button class="btn btn-primary btn-lg w-100" id="btnConfirmarVenta" onclick="procesarVenta()">
                                 <i class="bi bi-check-circle"></i> Confirmar Venta
                             </button>
                             <small class="text-muted d-block text-center mt-2">
@@ -742,7 +763,7 @@
             <div class="modal-content">
                 <div class="modal-body p-0">
                     <div class="row g-0">
-                        <div class="col-md-5 bg-success text-white p-4 d-flex flex-column justify-content-center align-items-center">
+                        <div class="col-md-5 text-white p-4 d-flex flex-column justify-content-center align-items-center" style="background: #035b77;">
                             <i class="bi bi-check-circle-fill" style="font-size: 80px;"></i>
                             <h3 class="mt-3">¡VENTA EXITOSA!</h3>
                             <hr class="w-75">
@@ -1141,7 +1162,7 @@
             
             if (cambio >= 0) {
                 document.getElementById('cambioAmount').textContent = 'S/. ' + cambio.toFixed(2);
-                document.getElementById('cambioAmount').className = 'text-success mb-0';
+                document.getElementById('cambioAmount').className = 'text-primary mb-0';
                 document.getElementById('restanteText').textContent = '';
             } else {
                 document.getElementById('cambioAmount').textContent = 'S/. 0.00';

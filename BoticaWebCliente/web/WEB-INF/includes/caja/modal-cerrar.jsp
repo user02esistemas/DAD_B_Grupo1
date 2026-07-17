@@ -13,11 +13,12 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+                <div id="mensajeCerrarCaja" class="d-none"></div>
                 <!-- InformaciÃ³n de horarios -->
                 <div class="alert alert-secondary mb-4">
                     <div class="row text-center">
                         <div class="col-md-4">
-                            <i class="bi bi-unlock-fill text-success"></i>
+                            <i class="bi bi-unlock-fill text-primary"></i>
                             <strong>Apertura:</strong><br>
                             <span id="cierreHoraApertura">--:--</span>
                         </div>
@@ -28,7 +29,7 @@
                         </div>
                         <div class="col-md-4">
                             <i class="bi bi-clock-history text-primary"></i>
-                            <strong>Duración:</strong><br>
+                            <strong>Duracion:</strong><br>
                             <span id="cierreDuracion">--</span>
                         </div>
                     </div>
@@ -46,7 +47,7 @@
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="card bg-success text-white h-100">
+                        <div class="card text-white h-100" style="background: #035b77;">
                             <div class="card-body text-center py-3">
                                 <i class="bi bi-cash" style="font-size: 24px;"></i>
                                 <p class="mb-1 mt-2 small">Efectivo Neto</p>
@@ -87,14 +88,14 @@
                                     </tr>
                                     <tr>
                                         <td>(+) Ventas en Efectivo:</td>
-                                        <td class="text-end text-success">S/ <span id="cierreVentasEfectivo">0.00</span></td>
+                                        <td class="text-end text-primary">S/ <span id="cierreVentasEfectivo">0.00</span></td>
                                     </tr>
                                     <tr>
                                         <td>(=) Ventas Virtuales:</td>
                                         <td class="text-end text-info">S/ <span id="cierreVentasVirtual">0.00</span></td>
                                     </tr>
                                     <tr>
-                                        <td>Total Ventas del Día:</td>
+                                        <td>Total Ventas del Dia:</td>
                                         <td class="text-end">S/ <span id="cierreTotalVentas">0.00</span></td>
                                     </tr>
                                     <tr class="table-primary">
@@ -129,7 +130,23 @@
                                     <textarea class="form-control" id="observacionesCierre" rows="2" 
                                               placeholder="Notas sobre el cierre (opcional)..."></textarea>
                                 </div>
-                                
+
+                                <div id="confirmacionCerrarCaja" class="caja-confirmacion-cierre d-none">
+                                    <div class="confirmacion-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                                    <div class="confirmacion-copy">
+                                        <div class="fw-bold">Confirmar cierre de caja</div>
+                                        <div class="small">Esta accion cerrara el turno actual y no se podra deshacer.</div>
+                                    </div>
+                                    <div class="confirmacion-actions">
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="CajaManager.ejecutarCerrar()">
+                                            Si, cerrar caja
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="CajaManager.cancelarConfirmacionCerrar()">
+                                            Cancelar
+                                        </button>
+                                    </div>
+                                </div>
+                                 
                                 <button class="btn btn-danger btn-lg w-100" onclick="CajaManager.confirmarCerrar()" id="btnConfirmarCerrar">
                                     <i class="bi bi-lock me-1"></i>Cerrar Caja
                                 </button>
@@ -141,3 +158,50 @@
         </div>
     </div>
 </div>
+
+<style>
+    .caja-confirmacion-cierre {
+        align-items: center;
+        background: #fff7df;
+        border: 1px solid #ffd77a;
+        border-radius: 12px;
+        display: grid;
+        gap: 10px 12px;
+        grid-template-columns: 36px minmax(0, 1fr);
+        margin-bottom: 12px;
+        padding: 12px;
+    }
+
+    .caja-confirmacion-cierre.d-none {
+        display: none !important;
+    }
+
+    .confirmacion-icon {
+        align-items: center;
+        background: #fff0bd;
+        border-radius: 10px;
+        color: #9a6700;
+        display: flex;
+        height: 36px;
+        justify-content: center;
+        width: 36px;
+    }
+
+    .confirmacion-copy {
+        color: #5f4700;
+        line-height: 1.35;
+        min-width: 0;
+    }
+
+    .confirmacion-actions {
+        display: grid;
+        gap: 8px;
+        grid-column: 1 / -1;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .confirmacion-actions .btn {
+        min-height: 36px;
+        white-space: nowrap;
+    }
+</style>

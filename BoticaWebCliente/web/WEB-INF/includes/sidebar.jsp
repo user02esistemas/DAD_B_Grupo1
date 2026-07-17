@@ -25,24 +25,35 @@
     }
     
     String currentPage = request.getRequestURI();
+    String sidebarNombre = (String) session.getAttribute("nombreCompleto");
+    if (sidebarNombre == null || sidebarNombre.trim().isEmpty()) {
+        sidebarNombre = (String) session.getAttribute("username");
+    }
+    if (sidebarNombre == null || sidebarNombre.trim().isEmpty()) {
+        sidebarNombre = "Usuario";
+    }
+    String sidebarRol = esAdmin ? "Administrador" : (esFarmaceutico ? "Farmaceutico" : "Usuario");
 %>
 
 <!-- Sidebar -->
 <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
-    <div class="position-sticky pt-3">
+    <div class="sidebar-inner">
+        <div class="sidebar-status-card">
+            <span><i class="bi bi-broadcast-pin me-2"></i>Sistema operativo</span>
+            <span class="sidebar-status-dot"></span>
+        </div>
+
         <ul class="nav flex-column">
             
             <% if (esAdmin) { %>
                 <!-- MENÚ ADMINISTRADOR -->
+                <li class="sidebar-heading">Principal</li>
                 <li class="nav-item">
                     <a class="nav-link <%= currentPage.contains("dashboard") ? "active" : "" %>" 
                        href="<%= request.getContextPath() %>/admin/dashboard.jsp">
                         <i class="bi bi-speedometer2 me-2"></i>Dashboard
                     </a>
                 </li>
-                
-                
-                
                 <!-- Reportes con submenu -->
                 <li class="nav-item">
                     <a class="nav-link <%= currentPage.contains("reportes") ? "active" : "" %>" 
@@ -72,6 +83,7 @@
                 </li>
                 
                 <!-- Compras con submenu -->
+                <li class="sidebar-heading">Operacion</li>
                 <li class="nav-item">
                     <a class="nav-link <%= currentPage.contains("compras") ? "active" : "" %>" 
                        data-bs-toggle="collapse" href="#comprasMenu">
@@ -125,6 +137,7 @@
                 </li>
                 
                 <!-- Inventario con submenu -->
+                <li class="sidebar-heading">Inventario</li>
                 <li class="nav-item">
                     <a class="nav-link <%= currentPage.contains("inventario") ? "active" : "" %>" 
                        data-bs-toggle="collapse" href="#inventarioMenu">
@@ -158,6 +171,7 @@
             
             <% if (esFarmaceutico) { %>
                 <!-- MENÚ FARMACÉUTICO -->
+                <li class="sidebar-heading">Operacion</li>
                 
                 <!-- POS - Punto de Venta -->
                 <li class="nav-item">
@@ -184,14 +198,20 @@
             <% } %>
             
             <!-- Opciones comunes -->
-            <li class="nav-item mt-3">
-                <hr>
-            </li>
+            <li class="sidebar-heading">Soporte</li>
             <li class="nav-item">
                 <a class="nav-link" href="#">
                     <i class="bi bi-question-circle me-2"></i>Ayuda
                 </a>
             </li>
         </ul>
+
+        <div class="sidebar-user-card">
+            <div class="sidebar-user-avatar"><i class="bi bi-person-fill"></i></div>
+            <div class="min-w-0">
+                <div class="fw-bold text-truncate"><%= sidebarNombre %></div>
+                <small><%= sidebarRol %></small>
+            </div>
+        </div>
     </div>
 </nav>

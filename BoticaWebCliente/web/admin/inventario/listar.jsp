@@ -51,7 +51,7 @@
 
 <style>
     .inventario-header {
-        background: linear-gradient(135deg, #1a5a4c 0%, #2d8a7a 100%);
+        background: linear-gradient(135deg, #035b77 0%, #0b7896 100%);
         color: white;
         padding: 20px;
         border-radius: 10px;
@@ -59,7 +59,7 @@
     }
     
     .badge-entrada {
-        background: #28a745;
+        background: #0b7896;
         color: white;
         padding: 5px 12px;
         border-radius: 20px;
@@ -96,7 +96,7 @@
     }
     
     .cantidad-entrada {
-        color: #28a745;
+        color: #035b77;
         font-weight: bold;
     }
     

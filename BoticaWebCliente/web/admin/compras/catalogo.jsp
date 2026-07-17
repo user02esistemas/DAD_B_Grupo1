@@ -14,7 +14,7 @@
 
 <style>
     .catalogo-header {
-        background: linear-gradient(135deg, #1a5a4c 0%, #2d8a7a 100%);
+        background: linear-gradient(135deg, #035b77 0%, #0b7896 100%);
         color: white;
         padding: 20px;
         border-radius: 10px;
@@ -69,7 +69,7 @@
     }
     
     .autocomplete-item:hover {
-        background: #f0f9f7;
+        background: #eef8fb;
     }
     
     .producto-nombre {
@@ -98,7 +98,7 @@
     .stats-card .number {
         font-size: 28px;
         font-weight: 700;
-        color: #1a5a4c;
+        color: #035b77;
     }
     
     .stats-card .label {
@@ -440,7 +440,7 @@
 <div class="toast-container position-fixed top-0 end-0 p-3">
     <div id="toastNotificacion" class="toast" role="alert">
         <div class="toast-header">
-            <i class="bi bi-check-circle text-success me-2" id="toastIcon"></i>
+            <i class="bi bi-check-circle text-primary me-2" id="toastIcon"></i>
             <strong class="me-auto" id="toastTitulo">Notificación</strong>
             <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
         </div>
@@ -779,7 +779,7 @@
         body.textContent = mensaje;
         
         if (tipo === 'success') {
-            icon.className = 'bi bi-check-circle text-success me-2';
+            icon.className = 'bi bi-check-circle text-primary me-2';
             titulo.textContent = 'Éxito';
         } else if (tipo === 'error') {
             icon.className = 'bi bi-exclamation-circle text-danger me-2';

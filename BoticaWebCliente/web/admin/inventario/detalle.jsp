@@ -37,7 +37,7 @@
 
 <style>
     .detalle-header {
-        background: linear-gradient(135deg, #1a5a4c 0%, #2d8a7a 100%);
+        background: linear-gradient(135deg, #035b77 0%, #0b7896 100%);
         color: white;
         padding: 25px;
         border-radius: 10px;
@@ -45,7 +45,7 @@
     }
     
     .badge-compra {
-        background: #28a745;
+        background: #0b7896;
         color: white;
         padding: 6px 15px;
         border-radius: 20px;
@@ -64,7 +64,7 @@
     
     .badge-completada {
         background: #d4edda;
-        color: #155724;
+        color: #035b77;
         padding: 5px 12px;
         border-radius: 15px;
         display: inline-block;
@@ -101,18 +101,18 @@
         border-bottom: none;
         font-weight: bold;
         font-size: 18px;
-        color: #1a5a4c;
+        color: #035b77;
     }
     
     .btn-volver {
         background: white;
-        color: #1a5a4c;
+        color: #035b77;
         border: none;
     }
     
     .btn-volver:hover {
         background: #f8f9fa;
-        color: #1a5a4c;
+        color: #035b77;
     }
 </style>
 
