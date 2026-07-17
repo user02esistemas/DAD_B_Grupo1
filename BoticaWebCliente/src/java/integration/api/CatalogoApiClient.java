@@ -127,14 +127,6 @@ public class CatalogoApiClient {
     }
 
     private Timestamp getTimestamp(JsonObject object, String key) {
-        String value = getString(object, key);
-        if (value == null || value.trim().isEmpty()) {
-            return null;
-        }
-        try {
-            return Timestamp.valueOf(value.replace('T', ' ').substring(0, 19));
-        } catch (IllegalArgumentException ex) {
-            return null;
-        }
+        return ApiDateParser.toTimestamp(getString(object, key));
     }
 }

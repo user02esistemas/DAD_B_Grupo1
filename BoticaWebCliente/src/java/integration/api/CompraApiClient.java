@@ -286,16 +286,11 @@ public class CompraApiClient {
     }
 
     private Date getDate(JsonObject object, String key) {
-        String value = getString(object, key);
-        return value == null || value.trim().isEmpty() ? null : Date.valueOf(value.substring(0, 10));
+        return ApiDateParser.toDate(getString(object, key));
     }
 
     private Timestamp getTimestamp(JsonObject object, String key) {
-        String value = getString(object, key);
-        if (value == null || value.trim().isEmpty()) {
-            return null;
-        }
-        return Timestamp.valueOf(value.replace('T', ' ').substring(0, 19));
+        return ApiDateParser.toTimestamp(getString(object, key));
     }
 
     public static class StockCatalogo {

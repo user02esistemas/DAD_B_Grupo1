@@ -35,6 +35,7 @@
     VentaApiClient.VentasResult ventasResult = new VentaApiClient().listarVentas(busqueda, pagina, porPagina);
     int totalRegistros = ventasResult.getTotal();
     int totalPaginas = (int) Math.ceil((double) totalRegistros / porPagina);
+    int offset = (pagina - 1) * porPagina;
     List<TransaccionDTO> ventas = ventasResult.getVentas();
     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 %>

@@ -117,14 +117,6 @@ public class CajaApiClient {
     }
 
     private Timestamp getTimestamp(JsonObject json, String key) {
-        String value = getString(json, key);
-        if (value == null || value.trim().isEmpty()) {
-            return null;
-        }
-        try {
-            return Timestamp.valueOf(value.replace('T', ' ').substring(0, 19));
-        } catch (Exception ex) {
-            return null;
-        }
+        return ApiDateParser.toTimestamp(getString(json, key));
     }
 }
