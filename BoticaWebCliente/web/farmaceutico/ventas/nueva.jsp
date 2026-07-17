@@ -280,6 +280,152 @@
         .ticket-footer { text-align: center; margin-top: 15px; font-size: 10px; }
         .ticket-qr { text-align: center; margin: 10px 0; }
         .logo-img { width: 55px; height: auto; display: block; margin: 0 auto; }
+        .pos-container.modern-pos {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 450px;
+            gap: 10px;
+            padding: 10px 14px 12px;
+            background: #f6f4f1;
+        }
+        .workspace-panel {
+            min-width: 0;
+            display: grid;
+            grid-template-rows: 42% minmax(0, 1fr);
+            gap: 10px;
+        }
+        .pos-card {
+            background: #fff;
+            border: 1px solid #eadfd3;
+            border-radius: 14px;
+            box-shadow: 0 1px 8px rgba(34, 28, 20, 0.06);
+            overflow: hidden;
+        }
+        .pos-card-header {
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            border-bottom: 1px solid #eadfd3;
+            background: #fffaf6;
+            font-weight: 800;
+            color: #20202a;
+        }
+        .quick-products-grid {
+            padding: 12px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+            gap: 10px;
+            overflow-y: auto;
+            height: calc(100% - 42px);
+        }
+        .quick-product-card {
+            min-height: 104px;
+            border: 1px solid #e6ddd4;
+            border-radius: 12px;
+            padding: 12px;
+            cursor: pointer;
+            color: #fff;
+            background: linear-gradient(180deg, rgba(10, 10, 10, 0.08), rgba(0, 0, 0, 0.78)), linear-gradient(135deg, #3b8b7b, #144f44);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .quick-product-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(20, 79, 68, 0.16); }
+        .quick-product-name { font-weight: 800; font-size: 14px; line-height: 1.2; }
+        .quick-product-meta { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+        .quick-product-price { font-size: 16px; font-weight: 900; margin-top: 4px; }
+        .cart-panel {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        .cart-table-header, .cart-row {
+            display: grid;
+            grid-template-columns: 44px minmax(0, 1fr) 80px 90px 90px 52px;
+            gap: 10px;
+            align-items: center;
+        }
+        .cart-table-header {
+            padding: 10px 14px;
+            color: #7b7280;
+            font-size: 12px;
+            font-weight: 800;
+            border-bottom: 1px solid #eee5dc;
+        }
+        .cart-row {
+            padding: 12px 14px;
+            border-bottom: 1px solid #f0e8df;
+            font-size: 13px;
+        }
+        .cart-row:hover { background: #fffcf8; }
+        .cart-name { font-weight: 800; color: #25212a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cart-sub { color: #8a8190; font-size: 11px; margin-top: 2px; }
+        .cart-qty {
+            border: 1px solid #d7c8b8;
+            border-radius: 999px;
+            padding: 5px 10px;
+            text-align: center;
+            color: #145646;
+            font-weight: 900;
+            cursor: pointer;
+        }
+        .cart-remove {
+            border: none;
+            background: #fff1f1;
+            color: #c92a2a;
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+        }
+        .summary-panel.modern-summary {
+            width: auto;
+            padding: 0;
+            border: 1px solid #eadfd3;
+            border-radius: 14px;
+            box-shadow: 0 1px 8px rgba(34, 28, 20, 0.07);
+            overflow: hidden;
+        }
+        .summary-section { padding: 16px; border-bottom: 1px solid #eadfd3; }
+        .summary-section:last-child { border-bottom: none; }
+        .section-label { font-size: 11px; color: #7b7280; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 7px; }
+        .side-input, .side-select {
+            width: 100%;
+            height: 38px;
+            border: 1px solid #e2d4c4;
+            border-radius: 8px;
+            padding: 0 12px;
+            background: #fffdfb;
+        }
+        .side-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .total-display.modern-total { text-align: right; margin: 0; }
+        .total-display.modern-total .total-amount { font-size: 38px; color: #123f35; }
+        .calc-card {
+            border: 1px solid #eadfd3;
+            border-radius: 12px;
+            padding: 12px;
+            background: #fffaf6;
+        }
+        .pay-button {
+            width: 100%;
+            border: none;
+            border-radius: 14px;
+            background: #175c4c;
+            color: #fff;
+            font-weight: 900;
+            padding: 18px;
+            letter-spacing: .04em;
+        }
+        .pay-button:disabled, .pay-button.disabled {
+            background: #eadfd3;
+            color: #9b9390;
+        }
+        @media (max-width: 1100px) {
+            .pos-container.modern-pos { grid-template-columns: 1fr; overflow-y: auto; }
+            .summary-panel.modern-summary { min-height: 520px; }
+            body { overflow: auto; }
+        }
     </style>
 </head>
 <body>
@@ -327,61 +473,110 @@
     </div>
 
     <!-- Contenedor principal -->
-    <div class="pos-container">
-        <!-- Panel de productos -->
-        <div class="products-panel">
-            <div class="products-header">
-                <span>Acc.</span>
-                <span>Medicamento</span>
-                <span>Cant.</span>
-                <span>P.Unit.</span>
-                <span>Dcto.</span>
-                <span>Importe</span>
-                <span>Stock</span>
-                <span></span>
-            </div>
-            <div class="products-list" id="productsList">
-                <div class="empty-state" id="emptyState">
-                    <i class="bi bi-capsule" style="font-size: 80px; color: #ddd;"></i>
-                    <h5>Busca un medicamento para empezar a vender</h5>
-                    <p class="text-muted">Escribe al menos 2 caracteres en el buscador</p>
+    <div class="pos-container modern-pos">
+        <div class="workspace-panel">
+            <section class="pos-card">
+                <div class="pos-card-header">
+                    <span><i class="bi bi-lightning-charge text-warning"></i> Productos Rápidos</span>
+                    <small class="text-muted">Selecciona para agregar al carrito</small>
                 </div>
-            </div>
+                <div class="quick-products-grid" id="quickProducts">
+                    <div class="text-muted small p-2">Cargando productos frecuentes...</div>
+                </div>
+            </section>
+
+            <section class="pos-card cart-panel">
+                <div class="pos-card-header">
+                    <span><i class="bi bi-cart3"></i> Carrito de Venta</span>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="vaciarCarrito()">
+                        <i class="bi bi-trash3"></i> Vaciar
+                    </button>
+                </div>
+                <div class="cart-table-header">
+                    <span>Acc.</span>
+                    <span>Medicamento</span>
+                    <span>Cant.</span>
+                    <span>P.Unit.</span>
+                    <span>Importe</span>
+                    <span>Stock</span>
+                </div>
+                <div class="products-list" id="productsList">
+                    <div class="empty-state" id="emptyState">
+                        <i class="bi bi-cart3" style="font-size: 70px; color: #ddd;"></i>
+                        <h5>El carrito está vacío</h5>
+                        <p class="text-muted">Busca o selecciona productos rápidos</p>
+                    </div>
+                </div>
+            </section>
         </div>
 
-        <!-- Panel resumen -->
-        <div class="summary-panel">
-            <div class="total-display">
-                <div class="total-label">Total a Pagar:</div>
-                <div class="total-amount">S/ <span id="totalAmount">0.00</span></div>
+        <aside class="summary-panel modern-summary">
+            <div class="summary-section">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="section-label">Cliente</div>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-person"></i></span>
+                            <input type="text" class="side-input" id="clientNameInput" value="CLIENTES VARIOS" oninput="sincronizarCliente()">
+                        </div>
+                    </div>
+                    <div class="total-display modern-total">
+                        <div class="total-label">Total a Pagar</div>
+                        <div class="total-amount">S/ <span id="totalAmount">0.00</span></div>
+                    </div>
+                </div>
+                <div class="client-info d-none">
+                    <div class="client-name" id="clientName">CLIENTES VARIOS</div>
+                </div>
             </div>
-            <div class="client-info">
-                <label>Cliente:</label>
-                <div class="client-name" id="clientName">CLIENTES VARIOS</div>
+
+            <div class="summary-section">
+                <div class="side-grid">
+                    <div>
+                        <div class="section-label">Método de pago</div>
+                        <select class="side-select" id="sideMetodoPago" onchange="seleccionarMetodoPago(this.value)">
+                            <option value="EFECTIVO">Efectivo</option>
+                            <option value="YAPE">Yape</option>
+                            <option value="PLIN">Plin</option>
+                            <option value="TRANSFERENCIA">Transferencia</option>
+                        </select>
+                    </div>
+                    <div>
+                        <div class="section-label">Comprobante</div>
+                        <select class="side-select" id="sideComprobante">
+                            <option value="NOTA_VENTA">Nota de venta</option>
+                            <option value="BOLETA">Boleta</option>
+                            <option value="FACTURA">Factura</option>
+                        </select>
+                    </div>
+                </div>
             </div>
-            <div class="action-buttons">
-                <button class="action-btn primary" onclick="mostrarModalCobro()">
-                    <i class="bi bi-cash-coin"></i> COBRAR (ESPACIO)
+
+            <div class="summary-section">
+                <div class="calc-card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong><i class="bi bi-calculator"></i> Calculadora de vuelto</strong>
+                        <strong>S/ <span id="calcTotal">0.00</span></strong>
+                    </div>
+                    <label class="small text-muted">Monto recibido</label>
+                    <input type="number" class="side-input mb-2" id="sideMontoRecibido" step="0.01" min="0" oninput="calcularCambioRapido()">
+                    <div class="d-flex justify-content-between bg-white rounded p-2">
+                        <span class="text-muted">Vuelto:</span>
+                        <strong>S/ <span id="sideVuelto">0.00</span></strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary-section summary-totals mt-auto">
+                <div class="summary-row"><span>Op. Gravadas:</span><span>S/ <span id="subtotalAmount">0.00</span></span></div>
+                <div class="summary-row"><span>IGV (18%):</span><span>S/ <span id="igvAmount">0.00</span></span></div>
+                <div class="summary-row"><span>Descuento:</span><span>S/ <span id="descuentoAmount">0.00</span></span></div>
+                <div class="summary-row small text-muted"><span><i class="bi bi-info-circle"></i> Precios incluyen IGV</span><span id="cartCount">0 items</span></div>
+                <button class="pay-button mt-3" id="sidePayButton" onclick="prepararCobroDesdePanel()" disabled>
+                    <i class="bi bi-check2"></i> CONFIRMAR VENTA
                 </button>
             </div>
-            <div class="summary-totals">
-                <div class="summary-row">
-                    <span>Op. Gravadas:</span>
-                    <span>S/ <span id="subtotalAmount">0.00</span></span>
-                </div>
-                <div class="summary-row">
-                    <span>IGV (18%):</span>
-                    <span>S/ <span id="igvAmount">0.00</span></span>
-                </div>
-                <div class="summary-row">
-                    <span>Descuento:</span>
-                    <span>S/ <span id="descuentoAmount">0.00</span></span>
-                </div>
-                <div class="summary-row" style="font-size: 11px; color: #666;">
-                    <span colspan="2"><i class="bi bi-info-circle"></i> Precios incluyen IGV</span>
-                </div>
-            </div>
-        </div>
+        </aside>
     </div>
 
     <!-- Modales de Caja (unificados) -->
@@ -633,6 +828,7 @@
             });
             
             renderizarProductos();
+            cargarProductosRapidos();
             if (!<%= cajaCerrada %>) document.getElementById('searchInput').focus();
         });
         
@@ -714,14 +910,45 @@
             calcularTotales();
             document.getElementById('searchInput').focus();
         }
+
+        function cargarProductosRapidos() {
+            fetch(contextPath + '/VentaController?action=buscarProductos&termino=pa')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var contenedor = document.getElementById('quickProducts');
+                    if (!data || data.length === 0) {
+                        contenedor.innerHTML = '<div class="text-muted small p-2">Busca productos para agregarlos al carrito.</div>';
+                        return;
+                    }
+                    var html = '';
+                    for (var i = 0; i < Math.min(data.length, 8); i++) {
+                        var p = data[i];
+                        html += '<div class="quick-product-card" data-index="' + i + '">' +
+                            '<div class="quick-product-name">' + escapeHtml(p.nombre || 'Producto') + '</div>' +
+                            '<div class="quick-product-meta">' + escapeHtml(p.concentracion || p.laboratorio || 'Disponible') + ' · Stock ' + (p.stock || 0) + '</div>' +
+                            '<div class="quick-product-price">S/ ' + parseFloat(p.precioVenta || 0).toFixed(2) + '</div>' +
+                        '</div>';
+                    }
+                    contenedor.innerHTML = html;
+                    contenedor.querySelectorAll('.quick-product-card').forEach(function(card) {
+                        card.addEventListener('click', function() {
+                            agregarProductoDesdeData(data[parseInt(this.getAttribute('data-index'))]);
+                        });
+                    });
+                })
+                .catch(function() {
+                    document.getElementById('quickProducts').innerHTML = '<div class="text-muted small p-2">No se pudieron cargar productos rápidos.</div>';
+                });
+        }
         
         function renderizarProductos() {
             var lista = document.getElementById('productsList');
             
             if (productosVenta.length === 0) {
                 lista.innerHTML = '<div class="empty-state">' +
-                    '<i class="bi bi-capsule" style="font-size: 80px; color: #ddd;"></i>' +
-                    '<h5>Busca un medicamento para empezar a vender</h5>' +
+                    '<i class="bi bi-cart3" style="font-size: 70px; color: #ddd;"></i>' +
+                    '<h5>El carrito está vacío</h5>' +
+                    '<p class="text-muted">Escanea, busca o selecciona productos rápidos</p>' +
                 '</div>';
                 return;
             }
@@ -729,17 +956,13 @@
             var html = '';
             for (var i = 0; i < productosVenta.length; i++) {
                 var p = productosVenta[i];
-                html += '<div class="product-row">' +
-                    '<div class="product-actions">' +
-                        '<button type="button" class="btn-delete" data-action="eliminar" data-index="' + i + '"><i class="bi bi-trash"></i></button>' +
-                    '</div>' +
-                    '<div class="product-name">' + p.nombre + '</div>' +
-                    '<div class="quantity-cell" data-action="editar" data-index="' + i + '">' + p.cantidad + '</div>' +
+                html += '<div class="cart-row">' +
+                    '<button type="button" class="cart-remove" data-action="eliminar" data-index="' + i + '"><i class="bi bi-trash"></i></button>' +
+                    '<div><div class="cart-name">' + escapeHtml(p.nombre) + '</div><div class="cart-sub">Precio incluido IGV</div></div>' +
+                    '<div class="cart-qty" data-action="editar" data-index="' + i + '">' + p.cantidad + '</div>' +
                     '<div>S/ ' + p.precioUnitario.toFixed(2) + '</div>' +
-                    '<div>S/ ' + p.descuento.toFixed(2) + '</div>' +
                     '<div><strong>S/ ' + p.importe.toFixed(2) + '</strong></div>' +
                     '<div>' + p.stockMax + '</div>' +
-                    '<div></div>' +
                 '</div>';
             }
             lista.innerHTML = html;
@@ -770,6 +993,51 @@
             document.getElementById('igvAmount').textContent = igvVenta.toFixed(2);
             document.getElementById('totalAmount').textContent = totalVenta.toFixed(2);
             document.getElementById('descuentoAmount').textContent = descuentoTotal.toFixed(2);
+            document.getElementById('calcTotal').textContent = totalVenta.toFixed(2);
+            document.getElementById('cartCount').textContent = productosVenta.length + (productosVenta.length === 1 ? ' item' : ' items');
+            document.getElementById('sidePayButton').disabled = productosVenta.length === 0;
+            calcularCambioRapido();
+        }
+
+        function vaciarCarrito() {
+            if (productosVenta.length === 0) return;
+            if (!confirm('¿Vaciar el carrito de venta?')) return;
+            productosVenta = [];
+            renderizarProductos();
+            calcularTotales();
+        }
+
+        function sincronizarCliente() {
+            var valor = document.getElementById('clientNameInput').value.trim();
+            document.getElementById('clientName').textContent = valor || 'CLIENTES VARIOS';
+        }
+
+        function calcularCambioRapido() {
+            var recibido = parseFloat(document.getElementById('sideMontoRecibido').value) || 0;
+            var vuelto = recibido - totalVenta;
+            document.getElementById('sideVuelto').textContent = (vuelto > 0 ? vuelto : 0).toFixed(2);
+        }
+
+        function prepararCobroDesdePanel() {
+            sincronizarCliente();
+            seleccionarMetodoPago(document.getElementById('sideMetodoPago').value);
+            var comprobante = document.getElementById('sideComprobante').value;
+            var radio = document.querySelector('input[name="tipoComp"][value="' + comprobante + '"]');
+            if (radio) radio.checked = true;
+            mostrarModalCobro();
+            if (metodoPagoSeleccionado === 'EFECTIVO') {
+                var recibido = document.getElementById('sideMontoRecibido').value;
+                if (recibido) {
+                    document.getElementById('montoEfectivo').value = recibido;
+                    calcularCambio();
+                }
+            }
+        }
+
+        function escapeHtml(value) {
+            return String(value == null ? '' : value).replace(/[&<>'"]/g, function(char) {
+                return {'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[char];
+            });
         }
         
         function eliminarProducto(index) {
