@@ -1,5 +1,10 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/widgets/error_panel.dart';
 import '../../../core/widgets/mobile_module_widgets.dart';
@@ -27,6 +32,10 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final DashboardViewModel _viewModel;
+  WebSocket? _notificationSocket;
+  Timer? _reconnectTimer;
+  final List<_RealtimeNotification> _realtimeNotifications = [];
+  int _unreadNotifications = 0;
 
   @override
   void initState() {
@@ -34,11 +43,14 @@ class _HomePageState extends State<HomePage> {
     _viewModel = DashboardViewModel(DashboardService(ApiClient()))
       ..addListener(_onViewModelChanged);
     _viewModel.load();
+    _connectNotifications();
   }
 
   @override
   void dispose() {
     _viewModel.removeListener(_onViewModelChanged);
+    _reconnectTimer?.cancel();
+    _notificationSocket?.close();
     super.dispose();
   }
 
@@ -47,6 +59,71 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _reload() => _viewModel.load();
+
+  Future<void> _connectNotifications() async {
+    try {
+      final socket = await WebSocket.connect(_webSocketUrl());
+      _notificationSocket = socket;
+      socket.listen(
+        _onNotificationMessage,
+        onDone: _scheduleNotificationReconnect,
+        onError: (_) => _scheduleNotificationReconnect(),
+        cancelOnError: true,
+      );
+    } catch (_) {
+      _scheduleNotificationReconnect();
+    }
+  }
+
+  void _scheduleNotificationReconnect() {
+    if (!mounted || (_reconnectTimer?.isActive ?? false)) return;
+    _reconnectTimer = Timer(const Duration(seconds: 4), _connectNotifications);
+  }
+
+  void _onNotificationMessage(dynamic data) {
+    try {
+      final decoded = jsonDecode(data.toString()) as Map<String, dynamic>;
+      final notification = _RealtimeNotification.fromJson(decoded);
+      if (!mounted) return;
+      setState(() {
+        _realtimeNotifications.insert(0, notification);
+        if (_realtimeNotifications.length > 20) {
+          _realtimeNotifications.removeRange(20, _realtimeNotifications.length);
+        }
+        _unreadNotifications++;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('${notification.titulo}: ${notification.mensaje}'),
+        behavior: SnackBarBehavior.floating,
+      ));
+    } catch (_) {
+      // Ignora mensajes que no correspondan al contrato de notificaciones.
+    }
+  }
+
+  String _webSocketUrl() {
+    final apiUri = Uri.parse(AppConfig.apiBaseUrl);
+    return apiUri
+        .replace(
+          scheme: apiUri.scheme == 'https' ? 'wss' : 'ws',
+          path: '${apiUri.path}/ws/notificaciones',
+          query: '',
+        )
+        .toString();
+  }
+
+  void _openNotifications(DashboardSummary summary) {
+    setState(() => _unreadNotifications = 0);
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => _NotificationsSheet(
+        user: widget.user,
+        summary: summary,
+        realtimeNotifications: _realtimeNotifications,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,25 +145,40 @@ class _HomePageState extends State<HomePage> {
           : _viewModel.error != null && summary == null
               ? ErrorPanel(message: _viewModel.error!, onRetry: _reload)
               : _DashboardContent(
-                  user: widget.user, summary: summary!, onReload: _reload),
+                  user: widget.user,
+                  summary: summary!,
+                  onReload: _reload,
+                  unreadNotifications: _unreadNotifications,
+                  onNotificationsTap: () => _openNotifications(summary)),
     );
   }
 }
 
 class _DashboardContent extends StatelessWidget {
   const _DashboardContent(
-      {required this.user, required this.summary, required this.onReload});
+      {required this.user,
+      required this.summary,
+      required this.onReload,
+      required this.unreadNotifications,
+      required this.onNotificationsTap});
 
   final User user;
   final DashboardSummary summary;
   final VoidCallback onReload;
+  final int unreadNotifications;
+  final VoidCallback onNotificationsTap;
 
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
       children: [
-        _SearchBar(user: user, summary: summary, onReload: onReload),
+        _SearchBar(
+            user: user,
+            summary: summary,
+            onReload: onReload,
+            unreadNotifications: unreadNotifications,
+            onNotificationsTap: onNotificationsTap),
         const SizedBox(height: 10),
         _HeroPanel(user: user, summary: summary),
         const SizedBox(height: 12),
@@ -107,11 +199,17 @@ class _DashboardContent extends StatelessWidget {
 
 class _SearchBar extends StatelessWidget {
   const _SearchBar(
-      {required this.user, required this.summary, required this.onReload});
+      {required this.user,
+      required this.summary,
+      required this.onReload,
+      required this.unreadNotifications,
+      required this.onNotificationsTap});
 
   final User user;
   final DashboardSummary summary;
   final VoidCallback onReload;
+  final int unreadNotifications;
+  final VoidCallback onNotificationsTap;
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +241,8 @@ class _SearchBar extends StatelessWidget {
         const SizedBox(width: 10),
         _SquareButton(
             icon: Icons.notifications_none_rounded,
-            onTap: () => _showNotifications(context, user, summary)),
+            badgeCount: unreadNotifications,
+            onTap: onNotificationsTap),
         const SizedBox(width: 8),
         _SquareButton(icon: Icons.sync_rounded, onTap: onReload),
       ],
@@ -156,15 +255,6 @@ class _SearchBar extends StatelessWidget {
       isScrollControlled: true,
       showDragHandle: true,
       builder: (_) => _ModuleSearchSheet(user: user),
-    );
-  }
-
-  void _showNotifications(
-      BuildContext context, User user, DashboardSummary summary) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (_) => _NotificationsSheet(user: user, summary: summary),
     );
   }
 }
@@ -658,13 +748,25 @@ class _ModuleSearchSheetState extends State<_ModuleSearchSheet> {
 }
 
 class _NotificationsSheet extends StatelessWidget {
-  const _NotificationsSheet({required this.user, required this.summary});
+  const _NotificationsSheet(
+      {required this.user,
+      required this.summary,
+      required this.realtimeNotifications});
   final User user;
   final DashboardSummary summary;
+  final List<_RealtimeNotification> realtimeNotifications;
 
   @override
   Widget build(BuildContext context) {
-    final items = _notificationItems(user, summary);
+    final items = [
+      for (final notification in realtimeNotifications)
+        _NotificationItem(
+            title: notification.titulo,
+            subtitle: '${notification.mensaje} - ${notification.fecha}',
+            icon: notification.icon,
+            color: notification.color),
+      ..._notificationItems(user, summary),
+    ];
     return SafeArea(
       child: FractionallySizedBox(
         heightFactor: 0.54,
@@ -741,6 +843,54 @@ class _NotificationItem {
   final IconData icon;
   final Color color;
   final Widget? page;
+}
+
+class _RealtimeNotification {
+  const _RealtimeNotification(
+      {required this.tipo,
+      required this.titulo,
+      required this.mensaje,
+      required this.fecha});
+
+  factory _RealtimeNotification.fromJson(Map<String, dynamic> json) {
+    return _RealtimeNotification(
+      tipo: json['tipo']?.toString() ?? 'INFO',
+      titulo: json['titulo']?.toString() ?? 'Notificacion',
+      mensaje: json['mensaje']?.toString() ?? '',
+      fecha: json['fecha']?.toString() ?? 'Ahora',
+    );
+  }
+
+  final String tipo;
+  final String titulo;
+  final String mensaje;
+  final String fecha;
+
+  IconData get icon {
+    switch (tipo) {
+      case 'VENTA':
+        return Icons.receipt_long_rounded;
+      case 'COMPRA':
+        return Icons.inventory_2_rounded;
+      case 'INVENTARIO':
+        return Icons.medication_rounded;
+      default:
+        return Icons.notifications_rounded;
+    }
+  }
+
+  Color get color {
+    switch (tipo) {
+      case 'VENTA':
+        return brandRed;
+      case 'COMPRA':
+        return const Color(0xFF8A5A16);
+      case 'INVENTARIO':
+        return const Color(0xFFE67700);
+      default:
+        return const Color(0xFF1F5F8B);
+    }
+  }
 }
 
 List<_NotificationItem> _notificationItems(
@@ -1168,9 +1318,11 @@ class _RiskDonutPainter extends CustomPainter {
 }
 
 class _SquareButton extends StatelessWidget {
-  const _SquareButton({required this.icon, required this.onTap});
+  const _SquareButton(
+      {required this.icon, required this.onTap, this.badgeCount = 0});
   final IconData icon;
   final VoidCallback onTap;
+  final int badgeCount;
   @override
   Widget build(BuildContext context) => Material(
         color: Colors.white,
@@ -1178,7 +1330,33 @@ class _SquareButton extends StatelessWidget {
         child: InkWell(
             borderRadius: BorderRadius.circular(18),
             onTap: onTap,
-            child: SizedBox(width: 50, height: 50, child: Icon(icon))),
+            child: SizedBox(
+              width: 50,
+              height: 50,
+              child: Stack(alignment: Alignment.center, children: [
+                Icon(icon),
+                if (badgeCount > 0)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: brandRed,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        badgeCount > 9 ? '9+' : '$badgeCount',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                  ),
+              ]),
+            )),
       );
 }
 

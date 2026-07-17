@@ -2,6 +2,7 @@ package api.inventario;
 
 import api.common.ApiResponse;
 import api.config.RMIClientFactory;
+import api.websocket.NotificacionBroadcaster;
 import com.google.gson.Gson;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -55,6 +56,11 @@ public class InventarioApiServlet extends HttpServlet {
                 return;
             }
             RMIClientFactory.getInventarioService().ajustarStock(ajuste.productoId, ajuste.nuevoStock, ajuste.motivo, ajuste.usuarioId);
+            NotificacionBroadcaster.enviar(
+                    "INVENTARIO",
+                    "Stock ajustado",
+                    "Producto ID " + ajuste.productoId + " actualizado a " + ajuste.nuevoStock + " unidades"
+            );
             response.setStatus(HttpServletResponse.SC_OK);
             response.getWriter().write(gson.toJson(ApiResponse.ok("Stock ajustado correctamente", null)));
         } catch (IllegalArgumentException ex) {

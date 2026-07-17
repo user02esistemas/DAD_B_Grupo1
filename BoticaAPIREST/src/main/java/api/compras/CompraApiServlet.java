@@ -2,6 +2,7 @@ package api.compras;
 
 import api.common.ApiResponse;
 import api.config.RMIClientFactory;
+import api.websocket.NotificacionBroadcaster;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import jakarta.servlet.ServletException;
@@ -118,6 +119,12 @@ public class CompraApiServlet extends HttpServlet {
             CompraServiceRMI compraService = RMIClientFactory.getCompraService();
             Long compraId = compraService.registrarCompra(compra, compraRequest.detalles);
             TransaccionDTO registrada = compraService.buscarPorId(compraId);
+            NotificacionBroadcaster.enviar(
+                    "COMPRA",
+                    "Compra registrada",
+                    "Compra " + texto(registrada == null ? null : registrada.getNumeroTransaccion())
+                    + " por S/ " + monto(registrada == null ? null : registrada.getTotal())
+            );
 
             response.setStatus(HttpServletResponse.SC_CREATED);
             response.getWriter().write(gson.toJson(ApiResponse.ok("Compra registrada", registrada)));
@@ -147,6 +154,9 @@ public class CompraApiServlet extends HttpServlet {
                 return;
             }
             boolean ok = RMIClientFactory.getCompraService().anular(id);
+            if (ok) {
+                NotificacionBroadcaster.enviar("COMPRA", "Compra anulada", "Se anulo la compra ID " + id);
+            }
             response.setStatus(ok ? HttpServletResponse.SC_OK : HttpServletResponse.SC_NOT_FOUND);
             response.getWriter().write(gson.toJson(ok ? ApiResponse.ok("Compra anulada", null) : ApiResponse.error("Compra no encontrada")));
         } catch (Exception ex) {
@@ -236,6 +246,14 @@ public class CompraApiServlet extends HttpServlet {
         } catch (NumberFormatException ex) {
             return null;
         }
+    }
+
+    private String texto(String value) {
+        return value == null || value.trim().isEmpty() ? "registrada" : value;
+    }
+
+    private String monto(BigDecimal value) {
+        return value == null ? "0.00" : value.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString();
     }
 
     private static class CompraRequest {

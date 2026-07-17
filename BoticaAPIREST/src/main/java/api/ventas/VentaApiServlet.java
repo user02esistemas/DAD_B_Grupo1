@@ -2,6 +2,7 @@ package api.ventas;
 
 import api.common.ApiResponse;
 import api.config.RMIClientFactory;
+import api.websocket.NotificacionBroadcaster;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import jakarta.servlet.ServletException;
@@ -108,6 +109,12 @@ public class VentaApiServlet extends HttpServlet {
 
             Long ventaId = ventaService.registrarVenta(venta, ventaRequest.detalles);
             TransaccionDTO registrada = ventaService.buscarPorId(ventaId);
+            NotificacionBroadcaster.enviar(
+                    "VENTA",
+                    "Venta registrada",
+                    "Venta " + texto(registrada == null ? null : registrada.getNumeroTransaccion())
+                    + " por S/ " + monto(registrada == null ? null : registrada.getTotal())
+            );
 
             response.setStatus(HttpServletResponse.SC_CREATED);
             response.getWriter().write(gson.toJson(ApiResponse.ok("Venta registrada", registrada)));
@@ -149,6 +156,14 @@ public class VentaApiServlet extends HttpServlet {
         } catch (NumberFormatException ex) {
             return null;
         }
+    }
+
+    private String texto(String value) {
+        return value == null || value.trim().isEmpty() ? "registrada" : value;
+    }
+
+    private String monto(BigDecimal value) {
+        return value == null ? "0.00" : value.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString();
     }
 
     private static class VentaRequest {
