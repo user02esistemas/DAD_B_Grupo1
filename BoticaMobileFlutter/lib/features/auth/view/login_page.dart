@@ -75,9 +75,9 @@ class _LoginPageState extends State<LoginPage> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFFFFE3DD),
-                  Color(0xFFFFFBFA),
-                  Color(0xFFFFF0EC)
+                  Color(0xFFE0F7FF),
+                  Color(0xFFF8FCFF),
+                  Color(0xFFBAE6FD)
                 ],
               ),
             ),
@@ -126,11 +126,13 @@ class _LoginPageState extends State<LoginPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Iniciar sesion',
+          Text('Bienvenido de nuevo',
+              textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900, color: const Color(0xFFD81E0C))),
+                  fontWeight: FontWeight.w900, color: const Color(0xFF0F2533))),
           const SizedBox(height: 5),
           Text('Ingrese sus credenciales para continuar.',
+              textAlign: TextAlign.center,
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
@@ -197,31 +199,166 @@ class _MobileLogin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-              color: const Color(0xFFE42313).withValues(alpha: 0.10),
-              blurRadius: 32,
-              offset: const Offset(0, 18))
+    return SizedBox(
+      height: 730,
+      child: Stack(
+        children: [
+          _LoginWaveHeader(status: status),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(22, 30, 22, 18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(34)),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0369A1).withValues(alpha: 0.12),
+                    blurRadius: 28,
+                    offset: const Offset(0, -8),
+                  )
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  form,
+                  const SizedBox(height: 18),
+                  const _SocialDivider(),
+                  const SizedBox(height: 14),
+                  const _SocialLoginRow(),
+                  const SizedBox(height: 14),
+                  TextButton(
+                    onPressed: () {},
+                    child: const Text('No tienes cuenta?  Crear cuenta'),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-                height: 198, child: _BrandPanel(compact: true, status: status)),
-            const SizedBox(height: 20),
-            form,
-          ],
-        ),
       ),
     );
   }
+}
+
+class _LoginWaveHeader extends StatelessWidget {
+  const _LoginWaveHeader({required this.status});
+
+  final _LoginStatus status;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: 335,
+        child: Stack(children: [
+          ClipPath(
+            clipper: _WaveClipper(),
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF17AFC5), Color(0xFF066B80)],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 28,
+            left: 0,
+            right: 0,
+            child: Column(children: [
+              const _BrandMark(size: 66),
+              const SizedBox(height: 12),
+              Text('EconoSalud',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.2)),
+              const SizedBox(height: 8),
+              _PulseBadge(status: status),
+            ]),
+          ),
+        ]),
+      );
+}
+
+class _WaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    return Path()
+      ..lineTo(0, size.height * 0.58)
+      ..cubicTo(size.width * 0.28, size.height * 0.44, size.width * 0.56,
+          size.height * 0.76, size.width, size.height * 0.58)
+      ..lineTo(size.width, 0)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
+class _SocialDivider extends StatelessWidget {
+  const _SocialDivider();
+
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        Expanded(child: Divider(color: Colors.black.withValues(alpha: 0.10))),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 14),
+          child: Text('O',
+              style: TextStyle(
+                  color: Color(0xFF607D8B),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800)),
+        ),
+        Expanded(child: Divider(color: Colors.black.withValues(alpha: 0.10))),
+      ]);
+}
+
+class _SocialLoginRow extends StatelessWidget {
+  const _SocialLoginRow();
+
+  @override
+  Widget build(BuildContext context) => const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _SocialCircle(label: 'G', color: Color(0xFFEA4335)),
+          SizedBox(width: 28),
+          _SocialCircle(label: 'f', color: Color(0xFF1877F2)),
+          SizedBox(width: 28),
+          _SocialCircle(label: '', color: Colors.black),
+        ],
+      );
+}
+
+class _SocialCircle extends StatelessWidget {
+  const _SocialCircle({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 44,
+        height: 44,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.07),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            )
+          ],
+        ),
+        child: Text(label,
+            style: TextStyle(
+                color: color, fontSize: 22, fontWeight: FontWeight.w900)),
+      );
 }
 
 class _WideLogin extends StatelessWidget {
@@ -280,7 +417,7 @@ class _BrandPanel extends StatelessWidget {
         gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFE42313), Color(0xFFFF6B47)]),
+            colors: [Color(0xFF38BDF8), Color(0xFF0369A1)]),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(compact ? 28 : 32),

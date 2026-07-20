@@ -4,10 +4,14 @@ import '../../../core/network/api_client.dart';
 import '../../../core/services/operational_data_service.dart';
 import '../../../core/widgets/error_panel.dart';
 import '../../../core/widgets/mobile_module_widgets.dart';
+import '../../auth/model/user.dart';
+import '../../caja/view/caja_page.dart';
 import '../../caja/service/cash_service.dart';
 
 class ReportesPage extends StatefulWidget {
-  const ReportesPage({super.key});
+  const ReportesPage({required this.user, super.key});
+
+  final User user;
 
   @override
   State<ReportesPage> createState() => _ReportesPageState();
@@ -67,13 +71,30 @@ class _ReportesPageState extends State<ReportesPage> {
         leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () => Navigator.of(context).maybePop()),
-        title: const Text('Reportes'),
+        title: const ModuleAppTitle(
+            title: 'Reportes', icon: Icons.bar_chart_rounded),
         actions: [
           IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded))
         ],
       ),
+      bottomNavigationBar: AppQuickNavBar(
+        current: '',
+        onHome: () => Navigator.of(context).popUntil((route) => route.isFirst),
+        onAlerts: () => _showQuickMessage('Revisa las alertas desde Inicio.'),
+        onCaja: widget.user.canViewCaja
+            ? () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => CajaPage(user: widget.user),
+                ))
+            : () => _showQuickMessage('No tienes acceso a Caja.'),
+        onProfile: () => showQuickProfileSheet(
+          context,
+          name: widget.user.nombreCompleto,
+          username: widget.user.username,
+          role: widget.user.rolesLabel,
+        ),
+      ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 104),
         children: [
           CompactModuleHeader(
             title: report == null
@@ -103,6 +124,13 @@ class _ReportesPageState extends State<ReportesPage> {
         ],
       ),
     );
+  }
+
+  void _showQuickMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+      behavior: SnackBarBehavior.floating,
+    ));
   }
 }
 

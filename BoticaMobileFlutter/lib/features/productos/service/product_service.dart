@@ -21,4 +21,22 @@ class ProductService {
         .map((json) => Product.fromJson(Map<String, dynamic>.from(json)))
         .toList();
   }
+
+  Future<void> adjustStock({
+    required int productId,
+    required int newStock,
+    required String reason,
+    required int userId,
+  }) async {
+    final result = await _apiClient.post('/api/inventario/ajustar', {
+      'productoId': productId,
+      'nuevoStock': newStock,
+      'motivo': reason,
+      'usuarioId': userId,
+    });
+
+    if (!result.success) {
+      throw Exception(result.message);
+    }
+  }
 }

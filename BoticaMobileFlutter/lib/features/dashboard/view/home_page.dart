@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../../../app.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/widgets/error_panel.dart';
@@ -15,6 +16,8 @@ import '../../caja/view/caja_page.dart';
 import '../../compras/view/compras_page.dart';
 import '../../productos/view/products_page.dart';
 import '../../reportes/view/reportes_page.dart';
+import '../../usuarios/model/admin_user.dart';
+import '../../usuarios/service/user_admin_service.dart';
 import '../../usuarios/view/usuarios_page.dart';
 import '../../ventas/view/ventas_page.dart';
 import '../model/dashboard_summary.dart';
@@ -31,7 +34,9 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   late final DashboardViewModel _viewModel;
+  late User _currentUser;
   WebSocket? _notificationSocket;
   Timer? _reconnectTimer;
   final List<_RealtimeNotification> _realtimeNotifications = [];
@@ -40,6 +45,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _currentUser = widget.user;
     _viewModel = DashboardViewModel(DashboardService(ApiClient()))
       ..addListener(_onViewModelChanged);
     _viewModel.load();
@@ -92,10 +98,9 @@ class _HomePageState extends State<HomePage> {
         }
         _unreadNotifications++;
       });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('${notification.titulo}: ${notification.mensaje}'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      if (AppPreferencesController.notificationsEnabled.value) {
+        _showNotificationToast(notification);
+      }
     } catch (_) {
       // Ignora mensajes que no correspondan al contrato de notificaciones.
     }
@@ -118,20 +123,82 @@ class _HomePageState extends State<HomePage> {
       context: context,
       showDragHandle: true,
       builder: (_) => _NotificationsSheet(
-        user: widget.user,
+        user: _currentUser,
         summary: summary,
         realtimeNotifications: _realtimeNotifications,
       ),
     );
   }
 
+  void _showNotificationToast(_RealtimeNotification notification) {
+    final summary = _viewModel.summary;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      elevation: 0,
+      duration: const Duration(seconds: 4),
+      backgroundColor: Colors.transparent,
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.fromLTRB(14, 0, 14, 16),
+      content: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: notification.color.withValues(alpha: 0.16)),
+          boxShadow: [
+            BoxShadow(
+              color: brandDark.withValues(alpha: 0.14),
+              blurRadius: 22,
+              offset: const Offset(0, 10),
+            )
+          ],
+        ),
+        child: Row(children: [
+          CircleAvatar(
+            backgroundColor: notification.color.withValues(alpha: 0.12),
+            child: Icon(notification.icon, color: notification.color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(notification.titulo,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: brandDark, fontWeight: FontWeight.w900)),
+                Text(notification.mensaje,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.black54)),
+              ],
+            ),
+          ),
+          if (summary != null)
+            TextButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                _openNotifications(summary);
+              },
+              child: const Text('Ver'),
+            ),
+        ]),
+      ),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final summary = _viewModel.summary;
     return Scaffold(
-      drawer: _AppDrawer(user: widget.user),
+      key: _scaffoldKey,
+      drawer: _AppDrawer(
+        user: _currentUser,
+        onUserUpdated: (user) => setState(() => _currentUser = user),
+      ),
       appBar: AppBar(
-        title: const Text('EconoSalud'),
+        title: const _BrandTitle(),
         leading: Builder(
           builder: (context) => IconButton.filledTonal(
             tooltip: 'Menu',
@@ -145,12 +212,75 @@ class _HomePageState extends State<HomePage> {
           : _viewModel.error != null && summary == null
               ? ErrorPanel(message: _viewModel.error!, onRetry: _reload)
               : _DashboardContent(
-                  user: widget.user,
+                  user: _currentUser,
                   summary: summary!,
                   onReload: _reload,
                   unreadNotifications: _unreadNotifications,
                   onNotificationsTap: () => _openNotifications(summary)),
+      bottomNavigationBar: summary == null
+          ? null
+          : AppQuickNavBar(
+              current: 'inicio',
+              alerts: _unreadNotifications,
+              onHome: () {},
+              onAlerts: () => _openNotifications(summary),
+              onCaja: () {
+                if (_currentUser.canViewCaja) {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => CajaPage(user: _currentUser)));
+                }
+              },
+              onProfile: () => _AppDrawer.showProfileSheet(
+                context,
+                user: _currentUser,
+                onUserUpdated: (user) => setState(() => _currentUser = user),
+              ),
+            ),
     );
+  }
+}
+
+class _BrandTitle extends StatelessWidget {
+  const _BrandTitle();
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = isDarkMode(context);
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Container(
+        width: 8,
+        height: 28,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(99),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [brandSky, brandSkyDark],
+          ),
+        ),
+      ),
+      const SizedBox(width: 9),
+      RichText(
+        text: TextSpan(
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                height: 1,
+                letterSpacing: -0.7,
+                fontWeight: FontWeight.w900,
+              ),
+          children: [
+            TextSpan(
+              text: 'Econo',
+              style:
+                  TextStyle(color: dark ? const Color(0xFFEAF8FF) : brandDark),
+            ),
+            const TextSpan(
+              text: 'Salud',
+              style: TextStyle(color: brandSkyDark),
+            ),
+          ],
+        ),
+      ),
+    ]);
   }
 }
 
@@ -171,7 +301,7 @@ class _DashboardContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 104),
       children: [
         _SearchBar(
             user: user,
@@ -213,6 +343,7 @@ class _SearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = isDarkMode(context);
     return Row(
       children: [
         Expanded(
@@ -223,15 +354,19 @@ class _SearchBar extends StatelessWidget {
               height: 50,
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                  color: Colors.white, borderRadius: BorderRadius.circular(18)),
-              child: const Row(
+                  color: dark ? darkSurfaceSoft : Colors.white,
+                  borderRadius: BorderRadius.circular(18)),
+              child: Row(
                 children: [
-                  Icon(Icons.search_rounded, color: Colors.black38),
-                  SizedBox(width: 10),
+                  Icon(Icons.search_rounded,
+                      color: dark ? const Color(0xFFB7CFDA) : Colors.black38),
+                  const SizedBox(width: 10),
                   Expanded(
                       child: Text('Buscar modulo o acceso',
                           style: TextStyle(
-                              color: Colors.black45,
+                              color: dark
+                                  ? const Color(0xFFB7CFDA)
+                                  : Colors.black45,
                               fontWeight: FontWeight.w600))),
                 ],
               ),
@@ -267,14 +402,18 @@ class _HeroPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = isDarkMode(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(26),
-        gradient: const LinearGradient(colors: [brandRed, Color(0xFFFF5A4E)]),
+        gradient: LinearGradient(
+            colors: dark
+                ? const [Color(0xFF0B7896), Color(0xFF38BDF8)]
+                : const [brandRed, Color(0xFFFF5A4E)]),
         boxShadow: [
           BoxShadow(
-              color: brandRed.withValues(alpha: 0.20),
+              color: (dark ? brandSkyDark : brandRed).withValues(alpha: 0.20),
               blurRadius: 24,
               offset: const Offset(0, 12))
         ],
@@ -419,7 +558,8 @@ class _MetricLine extends StatelessWidget {
               Text(data.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.black54, fontSize: 12)),
+                  style: TextStyle(
+                      color: moduleTextSecondary(context), fontSize: 12)),
               Text(data.value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -440,7 +580,7 @@ class _MiniMetric extends StatelessWidget {
         margin: const EdgeInsets.only(right: 10),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: moduleSurface(context),
           borderRadius: BorderRadius.circular(22),
           border: Border.all(color: data.color.withValues(alpha: 0.10)),
         ),
@@ -460,7 +600,8 @@ class _MiniMetric extends StatelessWidget {
               Text(data.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.black54, fontSize: 12)),
+                  style: TextStyle(
+                      color: moduleTextSecondary(context), fontSize: 12)),
             ]),
           ),
         ]),
@@ -903,7 +1044,7 @@ List<_NotificationItem> _notificationItems(
           subtitle: '${summary.stockBajo} productos requieren reposicion',
           icon: Icons.inventory_rounded,
           color: const Color(0xFFE67700),
-          page: const ProductsPage()));
+          page: ProductsPage(user: user)));
     }
     if (summary.vencidos > 0 || summary.porVencer > 0) {
       items.add(_NotificationItem(
@@ -912,7 +1053,7 @@ List<_NotificationItem> _notificationItems(
               '${summary.porVencer} por vencer y ${summary.vencidos} vencidos',
           icon: Icons.warning_amber_rounded,
           color: const Color(0xFFC2255C),
-          page: const ProductsPage()));
+          page: ProductsPage(user: user)));
     }
   }
   if (user.canViewVentas) {
@@ -931,15 +1072,15 @@ List<_NotificationItem> _notificationItems(
             'Total registrado S/ ${summary.comprasHoy.toStringAsFixed(2)}',
         icon: Icons.inventory_2_rounded,
         color: const Color(0xFF8A5A16),
-        page: const ComprasPage()));
+        page: ComprasPage(user: user)));
   }
   if (user.canViewReportes) {
-    items.add(const _NotificationItem(
+    items.add(_NotificationItem(
         title: 'Reporte listo',
         subtitle: 'Revisa ventas, compras y sesiones de caja',
         icon: Icons.bar_chart_rounded,
-        color: Color(0xFF1F5F8B),
-        page: ReportesPage()));
+        color: const Color(0xFF1F5F8B),
+        page: ReportesPage(user: user)));
   }
   if (items.isEmpty) {
     items.add(const _NotificationItem(
@@ -952,33 +1093,51 @@ List<_NotificationItem> _notificationItems(
 }
 
 class _AppDrawer extends StatelessWidget {
-  const _AppDrawer({required this.user});
+  const _AppDrawer({required this.user, required this.onUserUpdated});
 
   final User user;
+  final ValueChanged<User> onUserUpdated;
 
   @override
   Widget build(BuildContext context) {
     return Drawer(
+      backgroundColor: isDarkMode(context) ? const Color(0xFF111D22) : null,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _DrawerHeader(user: user, onTap: () => _showProfile(context)),
-              const SizedBox(height: 16),
-              _DrawerItem(
-                  icon: Icons.dashboard_rounded,
-                  label: 'Dashboard',
-                  onTap: () => Navigator.of(context).maybePop()),
-              for (final module in _modulesFor(user))
-                _DrawerItem(
-                    icon: module.icon,
-                    label: module.title,
-                    onTap: () =>
-                        _openModule(context, module.pageBuilder(user))),
-              const Spacer(),
-              _ProfileTile(user: user, onTap: () => _showProfile(context)),
+              _DrawerHeader(
+                  user: user,
+                  onTap: () => showProfileSheet(context,
+                      user: user, onUserUpdated: onUserUpdated)),
+              const SizedBox(height: 12),
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    const _DrawerSectionLabel('Principal'),
+                    _DrawerItem(
+                        icon: Icons.dashboard_rounded,
+                        label: 'Dashboard',
+                        onTap: () => Navigator.of(context).maybePop()),
+                    const SizedBox(height: 8),
+                    const _DrawerSectionLabel('Modulos'),
+                    for (final module in _modulesFor(user))
+                      _DrawerItem(
+                          icon: module.icon,
+                          label: module.title,
+                          onTap: () =>
+                              _openModule(context, module.pageBuilder(user))),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              _ProfileTile(
+                  user: user,
+                  onTap: () => showProfileSheet(context,
+                      user: user, onUserUpdated: onUserUpdated)),
             ],
           ),
         ),
@@ -986,70 +1145,273 @@ class _AppDrawer extends StatelessWidget {
     );
   }
 
-  void _showProfile(BuildContext context) {
+  static void showProfileSheet(
+    BuildContext context, {
+    required User user,
+    required ValueChanged<User> onUserUpdated,
+  }) {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       builder: (_) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-          child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: brandRed.withValues(alpha: 0.12),
-                    child: const Icon(Icons.person_rounded,
-                        color: brandRed, size: 30),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                        Text(user.nombreCompleto,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w900, fontSize: 18)),
-                        Text(user.username,
-                            style: const TextStyle(color: Colors.black54)),
-                      ])),
-                ]),
-                const SizedBox(height: 14),
+        child: FractionallySizedBox(
+          heightFactor: 0.82,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+            children: [
+              const Text('Perfil',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 18),
+              Column(children: [
+                CircleAvatar(
+                  radius: 38,
+                  backgroundColor: brandSky.withValues(alpha: 0.16),
+                  child: const Icon(Icons.person_rounded,
+                      color: brandSkyDark, size: 40),
+                ),
+                const SizedBox(height: 10),
+                Text(user.nombreCompleto,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w900)),
+                Text(user.username,
+                    style: const TextStyle(color: Colors.black54)),
+                const SizedBox(height: 8),
                 Wrap(spacing: 8, runSpacing: 8, children: [
                   _ProfileChip(
                       icon: Icons.verified_user_rounded,
                       label: user.rolesLabel),
                   _ProfileChip(icon: Icons.badge_rounded, label: user.username),
                 ]),
-                const SizedBox(height: 14),
-                const _ProfileAction(
-                    icon: Icons.touch_app_rounded,
-                    title: 'Perfil activo',
-                    subtitle:
-                        'Toca los accesos del panel o del menu para operar'),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      _logout(context);
-                    },
-                    icon: const Icon(Icons.logout_rounded),
-                    label: const Text('Cerrar sesion'),
+              ]),
+              const SizedBox(height: 18),
+              _ProfileMenuSection(title: 'Cuenta', children: [
+                _ProfileMenuItem(
+                  icon: Icons.manage_accounts_rounded,
+                  title: 'Administrar perfil',
+                  onTap: () => _openEditProfile(context, user, onUserUpdated),
+                ),
+                _ProfileMenuItem(
+                  icon: Icons.lock_reset_rounded,
+                  title: 'Cambiar contrasena',
+                  onTap: () => _openChangePassword(context, user),
+                ),
+                _ProfileMenuItem(
+                  icon: Icons.security_rounded,
+                  title: 'Seguridad y privacidad',
+                  onTap: () => _openInfoPage(
+                    context,
+                    title: 'Seguridad y privacidad',
+                    icon: Icons.security_rounded,
+                    description:
+                        'Tu sesion usa autenticacion del servidor y los cambios sensibles, como contrasena, se aplican mediante el modulo de usuarios.',
+                    bullets: const [
+                      'Cambia tu contrasena periodicamente.',
+                      'No compartas tu usuario con otros operadores.',
+                      'Cierra sesion al terminar tu turno.',
+                    ],
                   ),
                 ),
               ]),
+              _ProfileMenuSection(title: 'Preferencias', children: [
+                _ProfileMenuItem(
+                  icon: Icons.notifications_none_rounded,
+                  title: 'Notificaciones',
+                  trailing: ValueListenableBuilder<bool>(
+                    valueListenable:
+                        AppPreferencesController.notificationsEnabled,
+                    builder: (_, enabled, __) => Switch(
+                      value: enabled,
+                      onChanged: (value) => AppPreferencesController
+                          .notificationsEnabled.value = value,
+                    ),
+                  ),
+                ),
+                _ProfileMenuItem(
+                  icon: Icons.dark_mode_outlined,
+                  title: 'Modo oscuro',
+                  trailing: ValueListenableBuilder<ThemeMode>(
+                    valueListenable: AppThemeController.mode,
+                    builder: (_, mode, __) => Switch(
+                      value: mode == ThemeMode.dark,
+                      onChanged: AppThemeController.setDark,
+                    ),
+                  ),
+                ),
+                _ProfileMenuItem(
+                  icon: Icons.translate_rounded,
+                  title: 'Idioma',
+                  value: AppPreferencesController.language.value,
+                  onTap: () => _selectLanguage(context),
+                ),
+              ]),
+              _ProfileMenuSection(title: 'Soporte', children: [
+                _ProfileMenuItem(
+                  icon: Icons.help_outline_rounded,
+                  title: 'Centro de ayuda',
+                  onTap: () => _openInfoPage(
+                    context,
+                    title: 'Centro de ayuda',
+                    icon: Icons.help_outline_rounded,
+                    description:
+                        'Accesos rapidos para operar EconoSalud desde el movil.',
+                    bullets: const [
+                      'Productos: busca inventario y ajusta stock desde los tres puntos.',
+                      'Compras: registra ingresos y actualiza el historial.',
+                      'Caja: controla apertura, cierre y resumen diario.',
+                    ],
+                  ),
+                ),
+                _ProfileMenuItem(
+                  icon: Icons.description_outlined,
+                  title: 'Terminos y politicas',
+                  onTap: () => _openInfoPage(
+                    context,
+                    title: 'Terminos y politicas',
+                    icon: Icons.description_outlined,
+                    description:
+                        'El uso del sistema queda reservado para personal autorizado de la botica.',
+                    bullets: const [
+                      'Toda venta, compra y ajuste queda registrado.',
+                      'Los datos deben corresponder a operaciones reales.',
+                      'El acceso es personal y no transferible.',
+                    ],
+                  ),
+                ),
+                _ProfileMenuItem(
+                  icon: Icons.info_outline_rounded,
+                  title: 'Acerca de EconoSalud',
+                  value: 'v1.0',
+                  onTap: () => _openInfoPage(
+                    context,
+                    title: 'Acerca de EconoSalud',
+                    icon: Icons.info_outline_rounded,
+                    description:
+                        'Botica movil conectada a BoticaAPIREST, RMI y MySQL para operaciones distribuidas.',
+                    bullets: const [
+                      'Version movil: 1.0',
+                      'Notificaciones en tiempo real por WebSocket.',
+                      'Modulos: dashboard, productos, ventas, compras, caja y reportes.',
+                    ],
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _logout(context, user);
+                },
+                icon: const Icon(Icons.logout_rounded),
+                label: const Text('Cerrar sesion'),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Future<void> _logout(BuildContext context) async {
+  static void _showProfileNotice(BuildContext context, String option) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      behavior: SnackBarBehavior.floating,
+      content: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: brandDark.withValues(alpha: 0.12),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            )
+          ],
+        ),
+        child: Text('$option estara disponible proximamente.',
+            style:
+                const TextStyle(color: brandDark, fontWeight: FontWeight.w800)),
+      ),
+    ));
+  }
+
+  static Future<void> _openEditProfile(
+      BuildContext context, User user, ValueChanged<User> onUserUpdated) async {
+    Navigator.of(context).pop();
+    final updated = await Navigator.of(context).push<User>(MaterialPageRoute(
+      builder: (_) => EditProfilePage(user: user),
+    ));
+    if (updated != null) {
+      onUserUpdated(updated);
+    }
+  }
+
+  static Future<void> _openChangePassword(
+      BuildContext context, User user) async {
+    Navigator.of(context).pop();
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => ChangePasswordPage(user: user),
+    ));
+  }
+
+  static Future<void> _selectLanguage(BuildContext context) async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 6, 20, 24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const ListTile(
+              leading: Icon(Icons.translate_rounded),
+              title: Text('Seleccionar idioma',
+                  style: TextStyle(fontWeight: FontWeight.w900)),
+            ),
+            for (final option in const ['Espanol', 'Ingles'])
+              ListTile(
+                onTap: () => Navigator.of(context).pop(option),
+                title: Text(option),
+                trailing: AppPreferencesController.language.value == option
+                    ? const Icon(Icons.check_circle_rounded,
+                        color: brandSkyDark)
+                    : const Icon(Icons.circle_outlined),
+              ),
+          ]),
+        ),
+      ),
+    );
+    if (selected != null) {
+      AppPreferencesController.language.value = selected;
+      if (context.mounted) {
+        _showProfileNotice(context, 'Idioma cambiado a $selected');
+      }
+    }
+  }
+
+  static void _openInfoPage(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required String description,
+    required List<String> bullets,
+  }) {
+    Navigator.of(context).pop();
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => ProfileInfoPage(
+        title: title,
+        icon: icon,
+        description: description,
+        bullets: bullets,
+      ),
+    ));
+  }
+
+  static Future<void> _logout(BuildContext context, User user) async {
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
     navigator.pop();
@@ -1063,6 +1425,415 @@ class _AppDrawer extends StatelessWidget {
     navigator.pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const LoginPage()), (route) => false);
   }
+}
+
+class EditProfilePage extends StatefulWidget {
+  const EditProfilePage({required this.user, super.key});
+
+  final User user;
+
+  @override
+  State<EditProfilePage> createState() => _EditProfilePageState();
+}
+
+class _EditProfilePageState extends State<EditProfilePage> {
+  final _formKey = GlobalKey<FormState>();
+  final _username = TextEditingController();
+  final _email = TextEditingController();
+  final _name = TextEditingController();
+  final _dni = TextEditingController();
+  final _phone = TextEditingController();
+  late final UserAdminService _service;
+  AdminUser? _adminUser;
+  bool _loading = true;
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _service = UserAdminService(ApiClient());
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _username.dispose();
+    _email.dispose();
+    _name.dispose();
+    _dni.dispose();
+    _phone.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final user = await _service.userById(widget.user.id);
+      if (!mounted) return;
+      _adminUser = user;
+      _username.text = user.username;
+      _email.text = user.email;
+      _name.text = user.nombreCompleto;
+      _dni.text = user.dni;
+      _phone.text = user.telefono;
+    } catch (ex) {
+      if (!mounted) return;
+      _error = ex.toString().replaceFirst('Exception: ', '');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _save() async {
+    final user = _adminUser;
+    if (user == null || !_formKey.currentState!.validate()) return;
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final roleId = user.roles.isNotEmpty
+          ? user.roles.first.id
+          : (widget.user.roles.isNotEmpty ? widget.user.roles.first.id : 1);
+      await _service.update(
+        user,
+        username: _username.text.trim(),
+        email: _email.text.trim(),
+        nombreCompleto: _name.text.trim(),
+        dni: _dni.text.trim(),
+        telefono: _phone.text.trim(),
+        roleId: roleId,
+        activo: user.activo,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Perfil actualizado correctamente'),
+        behavior: SnackBarBehavior.floating,
+      ));
+      Navigator.of(context).pop(User(
+        id: widget.user.id,
+        username: _username.text.trim(),
+        nombreCompleto: _name.text.trim(),
+        roles: widget.user.roles,
+      ));
+    } catch (ex) {
+      if (mounted) {
+        setState(() => _error = ex.toString().replaceFirst('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: const Text('Administrar perfil')),
+        body: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+                children: [
+                  const CompactModuleHeader(
+                    title: 'Datos de usuario',
+                    subtitle: 'Actualiza tu informacion personal y de acceso',
+                    icon: Icons.manage_accounts_rounded,
+                    color: brandSkyDark,
+                  ),
+                  const SizedBox(height: 12),
+                  if (_error != null)
+                    ErrorPanel(
+                        message: _error!,
+                        onRetry: () => setState(() => _error = null)),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(children: [
+                          TextFormField(
+                            controller: _name,
+                            decoration: const InputDecoration(
+                              labelText: 'Nombre completo',
+                              prefixIcon: Icon(Icons.person_outline_rounded),
+                            ),
+                            validator: (value) =>
+                                value == null || value.trim().isEmpty
+                                    ? 'Ingrese nombre completo'
+                                    : null,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _username,
+                            decoration: const InputDecoration(
+                              labelText: 'Usuario',
+                              prefixIcon: Icon(Icons.alternate_email_rounded),
+                            ),
+                            validator: (value) =>
+                                value == null || value.trim().isEmpty
+                                    ? 'Ingrese usuario'
+                                    : null,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _email,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: const InputDecoration(
+                              labelText: 'Correo',
+                              prefixIcon: Icon(Icons.mail_outline_rounded),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _dni,
+                                keyboardType: TextInputType.number,
+                                decoration:
+                                    const InputDecoration(labelText: 'DNI'),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _phone,
+                                keyboardType: TextInputType.phone,
+                                decoration: const InputDecoration(
+                                    labelText: 'Telefono'),
+                              ),
+                            ),
+                          ]),
+                          const SizedBox(height: 16),
+                          FilledButton.icon(
+                            onPressed: _saving ? null : _save,
+                            icon: _saving
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.save_rounded),
+                            label: const Text('Guardar cambios'),
+                          ),
+                        ]),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+      );
+}
+
+class ChangePasswordPage extends StatefulWidget {
+  const ChangePasswordPage({required this.user, super.key});
+
+  final User user;
+
+  @override
+  State<ChangePasswordPage> createState() => _ChangePasswordPageState();
+}
+
+class _ChangePasswordPageState extends State<ChangePasswordPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _password = TextEditingController();
+  final _confirm = TextEditingController();
+  late final UserAdminService _service;
+  AdminUser? _adminUser;
+  bool _loading = true;
+  bool _saving = false;
+  bool _hidePassword = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _service = UserAdminService(ApiClient());
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _password.dispose();
+    _confirm.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      _adminUser = await _service.userById(widget.user.id);
+    } catch (ex) {
+      _error = ex.toString().replaceFirst('Exception: ', '');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _save() async {
+    final user = _adminUser;
+    if (user == null || !_formKey.currentState!.validate()) return;
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await _service.changePassword(user, _password.text);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Contrasena actualizada correctamente'),
+        behavior: SnackBarBehavior.floating,
+      ));
+      Navigator.of(context).pop();
+    } catch (ex) {
+      if (mounted) {
+        setState(() => _error = ex.toString().replaceFirst('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: const Text('Cambiar contrasena')),
+        body: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+                children: [
+                  const CompactModuleHeader(
+                    title: 'Nueva contrasena',
+                    subtitle:
+                        'Usa al menos 6 caracteres para actualizar tu acceso',
+                    icon: Icons.lock_reset_rounded,
+                    color: brandSkyDark,
+                  ),
+                  const SizedBox(height: 12),
+                  if (_error != null)
+                    ErrorPanel(
+                        message: _error!,
+                        onRetry: () => setState(() => _error = null)),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(children: [
+                          TextFormField(
+                            controller: _password,
+                            obscureText: _hidePassword,
+                            decoration: InputDecoration(
+                              labelText: 'Nueva contrasena',
+                              prefixIcon:
+                                  const Icon(Icons.lock_outline_rounded),
+                              suffixIcon: IconButton(
+                                onPressed: () => setState(
+                                    () => _hidePassword = !_hidePassword),
+                                icon: Icon(_hidePassword
+                                    ? Icons.visibility_off_rounded
+                                    : Icons.visibility_rounded),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Ingrese contrasena';
+                              }
+                              if (value.length < 6) {
+                                return 'Minimo 6 caracteres';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _confirm,
+                            obscureText: _hidePassword,
+                            decoration: const InputDecoration(
+                              labelText: 'Confirmar contrasena',
+                              prefixIcon: Icon(Icons.verified_user_outlined),
+                            ),
+                            validator: (value) => value != _password.text
+                                ? 'Las contrasenas no coinciden'
+                                : null,
+                          ),
+                          const SizedBox(height: 16),
+                          FilledButton.icon(
+                            onPressed: _saving ? null : _save,
+                            icon: _saving
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.check_rounded),
+                            label: const Text('Actualizar contrasena'),
+                          ),
+                        ]),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+      );
+}
+
+class ProfileInfoPage extends StatelessWidget {
+  const ProfileInfoPage({
+    required this.title,
+    required this.icon,
+    required this.description,
+    required this.bullets,
+    super.key,
+  });
+
+  final String title;
+  final IconData icon;
+  final String description;
+  final List<String> bullets;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: Text(title)),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+          children: [
+            CompactModuleHeader(
+              title: title,
+              subtitle: description,
+              icon: icon,
+              color: brandSkyDark,
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Detalles',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 10),
+                    for (final bullet in bullets)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.check_circle_rounded,
+                                color: brandSkyDark, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(child: Text(bullet)),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class _SectionTitle extends StatelessWidget {
@@ -1102,8 +1873,8 @@ class _DrawerHeader extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-              gradient:
-                  const LinearGradient(colors: [brandRed, Color(0xFFFF5A4E)]),
+              gradient: const LinearGradient(
+                  colors: [brandSkyDark, Color(0xFF38BDF8)]),
               borderRadius: BorderRadius.circular(24)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1147,19 +1918,86 @@ class _ProfileTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Card(
-        color: brandRed.withValues(alpha: 0.08),
-        child: ListTile(
+  Widget build(BuildContext context) => Material(
+        color: Colors.transparent,
+        child: InkWell(
           onTap: onTap,
-          leading: CircleAvatar(
-            backgroundColor: brandRed.withValues(alpha: 0.14),
-            child: const Icon(Icons.person_rounded, color: brandRed),
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: isDarkMode(context)
+                  ? darkSurfaceSoft
+                  : brandSky.withValues(alpha: 0.09),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: brandSky.withValues(alpha: 0.14)),
+              boxShadow: [
+                BoxShadow(
+                  color: brandDark.withValues(
+                      alpha: isDarkMode(context) ? 0.22 : 0.07),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                )
+              ],
+            ),
+            child: Row(children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  gradient:
+                      const LinearGradient(colors: [brandSky, brandSkyDark]),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Icon(Icons.person_rounded,
+                    color: Colors.white, size: 28),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Mi perfil',
+                        style: TextStyle(
+                            color: moduleTextPrimary(context),
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16)),
+                    const SizedBox(height: 2),
+                    Text(user.username,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: moduleTextSecondary(context))),
+                    const SizedBox(height: 7),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: brandSky.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(user.rolesLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: brandSkyDark,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900)),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: moduleSurface(context),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.arrow_forward_ios_rounded,
+                    size: 15, color: brandSkyDark),
+              ),
+            ]),
           ),
-          title: const Text('Mi perfil',
-              style: TextStyle(fontWeight: FontWeight.w900)),
-          subtitle:
-              Text(user.username, maxLines: 1, overflow: TextOverflow.ellipsis),
-          trailing: const Icon(Icons.more_horiz_rounded),
         ),
       );
 }
@@ -1171,47 +2009,89 @@ class _ProfileChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Chip(
-        avatar: Icon(icon, size: 17, color: brandRed),
+        avatar: Icon(icon, size: 17, color: brandSkyDark),
         label: Text(label),
-        backgroundColor: brandRed.withValues(alpha: 0.08),
+        backgroundColor: brandSky.withValues(alpha: 0.10),
         side: BorderSide.none,
       );
 }
 
-class _ProfileAction extends StatelessWidget {
-  const _ProfileAction(
-      {required this.icon, required this.title, required this.subtitle});
-  final IconData icon;
+class _ProfileMenuSection extends StatelessWidget {
+  const _ProfileMenuSection({required this.title, required this.children});
+
   final String title;
-  final String subtitle;
+  final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: softBackground,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: brandRed.withValues(alpha: 0.10)),
-        ),
-        child: Row(children: [
-          CircleAvatar(
-            backgroundColor: brandRed.withValues(alpha: 0.12),
-            child: Icon(icon, color: brandRed, size: 20),
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 7),
+            child: Text(title,
+                style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900)),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                Text(title,
-                    style: const TextStyle(fontWeight: FontWeight.w900)),
-                Text(subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style:
-                        const TextStyle(color: Colors.black54, fontSize: 12)),
-              ])),
+          Container(
+            decoration: BoxDecoration(
+              color: moduleSurface(context),
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: brandDark.withValues(alpha: 0.04),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                )
+              ],
+            ),
+            child: Column(children: children),
+          ),
         ]),
+      );
+}
+
+class _ProfileMenuItem extends StatelessWidget {
+  const _ProfileMenuItem({
+    required this.icon,
+    required this.title,
+    this.onTap,
+    this.value,
+    this.trailing,
+  });
+
+  final IconData icon;
+  final String title;
+  final VoidCallback? onTap;
+  final String? value;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+          child: Row(children: [
+            Icon(icon, color: moduleTextSecondary(context), size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(title,
+                  style: TextStyle(
+                      color: moduleTextPrimary(context),
+                      fontWeight: FontWeight.w800)),
+            ),
+            if (value != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Text(value!,
+                    style: TextStyle(
+                        color: moduleTextMuted(context), fontSize: 12)),
+              ),
+            trailing ?? const Icon(Icons.chevron_right_rounded, size: 20),
+          ]),
+        ),
       );
 }
 
@@ -1325,7 +2205,7 @@ class _SquareButton extends StatelessWidget {
   final int badgeCount;
   @override
   Widget build(BuildContext context) => Material(
-        color: Colors.white,
+        color: isDarkMode(context) ? darkSurfaceSoft : Colors.white,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
             borderRadius: BorderRadius.circular(18),
@@ -1334,7 +2214,7 @@ class _SquareButton extends StatelessWidget {
               width: 50,
               height: 50,
               child: Stack(alignment: Alignment.center, children: [
-                Icon(icon),
+                Icon(icon, color: moduleTextPrimary(context)),
                 if (badgeCount > 0)
                   Positioned(
                     top: 8,
@@ -1368,15 +2248,75 @@ class _DrawerItem extends StatelessWidget {
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
-    const color = brandDark;
-    return ListTile(
-      leading: Icon(icon, color: color),
-      title: Text(label,
-          style: const TextStyle(color: color, fontWeight: FontWeight.w700)),
-      onTap: onTap,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    final color = moduleTextPrimary(context);
+    final accent = isDarkMode(context) ? brandSky : brandSkyDark;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 7),
+      child: Material(
+        color: moduleSurface(context)
+            .withValues(alpha: isDarkMode(context) ? 0.78 : 0.72),
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: accent.withValues(alpha: 0.08)),
+            ),
+            child: Row(children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: accent, size: 21),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(label,
+                    style: TextStyle(
+                        color: color,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900)),
+              ),
+              Icon(Icons.chevron_right_rounded,
+                  color: moduleTextMuted(context), size: 20),
+            ]),
+          ),
+        ),
+      ),
     );
   }
+}
+
+class _DrawerSectionLabel extends StatelessWidget {
+  const _DrawerSectionLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+        child: Row(children: [
+          Text(text.toUpperCase(),
+              style: TextStyle(
+                  color: moduleTextMuted(context),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.9)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Container(
+              height: 1,
+              color: moduleTextMuted(context).withValues(alpha: 0.22),
+            ),
+          ),
+        ]),
+      );
 }
 
 class _MetricData {
@@ -1406,7 +2346,7 @@ List<_ModuleItem> _modulesFor(User user) => [
             'Inventario, stock y vencimientos',
             Icons.medication_rounded,
             brandRed,
-            (_) => const ProductsPage(),
+            (user) => ProductsPage(user: user),
             ['Buscar', 'Stock']),
       if (user.canViewVentas)
         _ModuleItem(
@@ -1422,7 +2362,7 @@ List<_ModuleItem> _modulesFor(User user) => [
             'Proveedores e ingresos',
             Icons.inventory_2_rounded,
             brandRed,
-            (_) => const ComprasPage(),
+            (user) => ComprasPage(user: user),
             ['Proveedor', 'Ingreso']),
       if (user.canViewCaja)
         _ModuleItem(
@@ -1438,7 +2378,7 @@ List<_ModuleItem> _modulesFor(User user) => [
             'Ventas por rango y productos top',
             Icons.bar_chart_rounded,
             brandRed,
-            (_) => const ReportesPage(),
+            (user) => ReportesPage(user: user),
             ['Rangos', 'Top']),
       if (user.canViewUsuarios)
         _ModuleItem(
@@ -1446,7 +2386,7 @@ List<_ModuleItem> _modulesFor(User user) => [
             'Roles, perfiles y accesos',
             Icons.group_rounded,
             brandRed,
-            (_) => const UsuariosPage(),
+            (user) => UsuariosPage(user: user),
             ['Roles', 'Acceso']),
     ];
 

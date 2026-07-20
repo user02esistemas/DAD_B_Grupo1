@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/widgets/error_panel.dart';
+import '../../../core/widgets/mobile_module_widgets.dart';
 import '../../auth/model/user.dart';
 import '../service/cash_service.dart';
 
@@ -86,13 +87,26 @@ class _CajaPageState extends State<CajaPage> {
         leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () => Navigator.of(context).maybePop()),
-        title: const Text('Caja'),
+        title: const ModuleAppTitle(
+            title: 'Caja', icon: Icons.account_balance_wallet_rounded),
         actions: [
           IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded))
         ],
       ),
+      bottomNavigationBar: AppQuickNavBar(
+        current: 'caja',
+        onHome: () => Navigator.of(context).popUntil((route) => route.isFirst),
+        onAlerts: () => _showMessage('Revisa las alertas desde Inicio.'),
+        onCaja: _load,
+        onProfile: () => showQuickProfileSheet(
+          context,
+          name: widget.user.nombreCompleto,
+          username: widget.user.username,
+          role: widget.user.rolesLabel,
+        ),
+      ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 104),
         children: [
           if (_error != null) ErrorPanel(message: _error!, onRetry: _load),
           Card(

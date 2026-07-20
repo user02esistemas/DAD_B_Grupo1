@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/widgets/error_panel.dart';
 import '../../../core/widgets/mobile_module_widgets.dart';
+import '../../auth/model/user.dart';
+import '../../caja/view/caja_page.dart';
 import '../model/admin_user.dart';
 import '../service/user_admin_service.dart';
 import '../viewmodel/user_admin_viewmodel.dart';
 
 class UsuariosPage extends StatefulWidget {
-  const UsuariosPage({super.key});
+  const UsuariosPage({required this.user, super.key});
+
+  final User user;
 
   @override
   State<UsuariosPage> createState() => _UsuariosPageState();
@@ -47,7 +51,8 @@ class _UsuariosPageState extends State<UsuariosPage> {
         leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () => Navigator.of(context).maybePop()),
-        title: const Text('Usuarios'),
+        title:
+            const ModuleAppTitle(title: 'Usuarios', icon: Icons.groups_rounded),
         actions: [
           IconButton(
               onPressed: _viewModel.load,
@@ -58,8 +63,31 @@ class _UsuariosPageState extends State<UsuariosPage> {
           onPressed: _viewModel.roles.isEmpty ? null : () => _openEditor(),
           icon: const Icon(Icons.person_add_alt_rounded),
           label: const Text('Nuevo')),
+      bottomNavigationBar: AppQuickNavBar(
+        current: '',
+        onHome: () => Navigator.of(context).popUntil((route) => route.isFirst),
+        onAlerts: () => _showQuickMessage('Revisa las alertas desde Inicio.'),
+        onCaja: widget.user.canViewCaja
+            ? () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => CajaPage(user: widget.user),
+                ))
+            : () => _showQuickMessage('No tienes acceso a Caja.'),
+        onProfile: () => showQuickProfileSheet(
+          context,
+          name: widget.user.nombreCompleto,
+          username: widget.user.username,
+          role: widget.user.rolesLabel,
+        ),
+      ),
       body: RefreshIndicator(onRefresh: _viewModel.load, child: _buildBody()),
     );
+  }
+
+  void _showQuickMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+      behavior: SnackBarBehavior.floating,
+    ));
   }
 
   Widget _buildBody() {
